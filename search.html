@@ -16,212 +16,68 @@
     padding: 20px;
   }
 
-  .search-container {
-    max-width: 800px;
-    margin: 0 auto;
-  }
+  .search-container { max-width: 800px; margin: 0 auto; }
 
-  h1 {
-    font-size: 1.4em;
-    color: #e94560;
-    margin-bottom: 16px;
-    font-weight: 700;
-    letter-spacing: 1px;
-  }
+  h1 { font-size: 1.4em; color: #e94560; margin-bottom: 16px; font-weight: 700; letter-spacing: 1px; }
 
-  .search-box {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 8px;
-  }
+  .search-box { display: flex; gap: 8px; margin-bottom: 8px; }
 
   #searchInput {
-    flex: 1;
-    padding: 10px 16px;
-    font-size: 16px;
-    border: 2px solid #333;
-    border-radius: 8px;
-    background: #16213e;
-    color: #e0e0e0;
-    outline: none;
-    font-family: 'Noto Sans TC', sans-serif;
-    transition: border-color 0.2s;
+    flex: 1; padding: 10px 16px; font-size: 16px;
+    border: 2px solid #333; border-radius: 8px;
+    background: #16213e; color: #e0e0e0; outline: none;
+    font-family: 'Noto Sans TC', sans-serif; transition: border-color 0.2s;
   }
-
-  #searchInput:focus {
-    border-color: #e94560;
-  }
-
-  #searchInput::placeholder {
-    color: #666;
-  }
+  #searchInput:focus { border-color: #e94560; }
+  #searchInput::placeholder { color: #666; }
 
   #searchBtn {
-    padding: 10px 24px;
-    font-size: 16px;
-    background: #e94560;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-family: 'Noto Sans TC', sans-serif;
-    font-weight: 500;
-    transition: background 0.2s;
-    white-space: nowrap;
+    padding: 10px 24px; font-size: 16px; background: #e94560; color: white;
+    border: none; border-radius: 8px; cursor: pointer;
+    font-family: 'Noto Sans TC', sans-serif; font-weight: 500;
+    transition: background 0.2s; white-space: nowrap;
   }
+  #searchBtn:hover { background: #c73650; }
 
-  #searchBtn:hover {
-    background: #c73650;
-  }
+  .search-options { display: flex; gap: 16px; margin-bottom: 16px; font-size: 14px; color: #999; }
+  .search-options label { cursor: pointer; display: flex; align-items: center; gap: 4px; }
+  .search-options input[type="checkbox"] { accent-color: #e94560; }
 
-  .search-options {
-    display: flex;
-    gap: 16px;
-    margin-bottom: 16px;
-    font-size: 14px;
-    color: #999;
-  }
-
-  .search-options label {
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .search-options input[type="checkbox"] {
-    accent-color: #e94560;
-  }
-
-  #status {
-    padding: 12px 0;
-    font-size: 14px;
-    color: #999;
-  }
-
-  #results {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
+  #status { padding: 12px 0; font-size: 14px; color: #999; }
+  #results { display: flex; flex-direction: column; gap: 12px; }
 
   .result-item {
-    background: #16213e;
-    border: 1px solid #2a2a4a;
-    border-radius: 8px;
-    padding: 16px;
-    transition: border-color 0.2s;
-    cursor: pointer;
+    background: #16213e; border: 1px solid #2a2a4a; border-radius: 8px;
+    padding: 16px; transition: border-color 0.2s; cursor: pointer;
+  }
+  .result-item:hover { border-color: #e94560; }
+
+  .result-path {
+    font-size: 12px; color: #e9a545; margin-bottom: 6px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
 
-  .result-item:hover {
-    border-color: #e94560;
-  }
+  .result-title { font-size: 1.1em; font-weight: 700; color: #e94560; margin-bottom: 6px; }
+  .result-title a { color: inherit; text-decoration: none; }
+  .result-title a:hover { text-decoration: underline; }
 
-  .result-title {
-    font-size: 1.1em;
-    font-weight: 700;
-    color: #e94560;
-    margin-bottom: 6px;
-  }
+  .result-snippet { font-size: 14px; line-height: 1.6; color: #b0b0b0; word-break: break-all; }
+  .result-snippet mark { background: #e9456044; color: #ff8a9e; padding: 1px 2px; border-radius: 2px; }
 
-  .result-title a {
-    color: inherit;
-    text-decoration: none;
-  }
+  .result-url { font-size: 12px; color: #555; margin-top: 6px; }
 
-  .result-title a:hover {
-    text-decoration: underline;
-  }
+  .no-results { text-align: center; padding: 40px; color: #666; font-size: 16px; }
+  .result-count { font-size: 14px; color: #888; margin-bottom: 12px; }
 
-  .result-snippet {
-    font-size: 14px;
-    line-height: 1.6;
-    color: #b0b0b0;
-    word-break: break-all;
-  }
-
-  .result-snippet mark {
-    background: #e9456044;
-    color: #ff8a9e;
-    padding: 1px 2px;
-    border-radius: 2px;
-  }
-
-  .result-url {
-    font-size: 12px;
-    color: #555;
-    margin-top: 6px;
-  }
-
-  .loading {
-    text-align: center;
-    padding: 40px;
-    color: #666;
-  }
-
-  .loading .spinner {
-    display: inline-block;
-    width: 24px;
-    height: 24px;
-    border: 3px solid #333;
-    border-top-color: #e94560;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    margin-right: 8px;
-    vertical-align: middle;
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-
-  .no-results {
-    text-align: center;
-    padding: 40px;
-    color: #666;
-    font-size: 16px;
-  }
-
-  .result-count {
-    font-size: 14px;
-    color: #888;
-    margin-bottom: 12px;
-  }
-
-  .pagination {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    margin-top: 20px;
-  }
-
+  .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 20px; }
   .pagination button {
-    padding: 8px 16px;
-    background: #16213e;
-    color: #e0e0e0;
-    border: 1px solid #333;
-    border-radius: 6px;
-    cursor: pointer;
+    padding: 8px 16px; background: #16213e; color: #e0e0e0;
+    border: 1px solid #333; border-radius: 6px; cursor: pointer;
     font-family: 'Noto Sans TC', sans-serif;
   }
-
-  .pagination button:hover {
-    border-color: #e94560;
-  }
-
-  .pagination button:disabled {
-    opacity: 0.3;
-    cursor: default;
-  }
-
-  .pagination .page-info {
-    padding: 8px 12px;
-    color: #888;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-  }
+  .pagination button:hover { border-color: #e94560; }
+  .pagination button:disabled { opacity: 0.3; cursor: default; }
+  .pagination .page-info { padding: 8px 12px; color: #888; font-size: 14px; display: flex; align-items: center; }
 </style>
 </head>
 <body>
@@ -237,6 +93,7 @@
   <div class="search-options">
     <label><input type="checkbox" id="titleOnly"> 僅搜尋標題</label>
     <label><input type="checkbox" id="exactMatch"> 完全匹配</label>
+    <label><input type="checkbox" id="searchPath"> 搜尋目錄路徑</label>
   </div>
 
   <div id="status">正在載入搜尋索引...</div>
@@ -248,9 +105,9 @@
 let searchData = [];
 let currentResults = [];
 let currentPage = 1;
+let lastKeywords = [];
 const RESULTS_PER_PAGE = 20;
 
-// 載入索引
 fetch('search.json')
   .then(r => r.json())
   .then(data => {
@@ -259,34 +116,29 @@ fetch('search.json')
       `索引載入完成，共 ${data.length} 個頁面可供搜尋。`;
   })
   .catch(err => {
-    document.getElementById('status').textContent =
-      '索引載入失敗，請確認 search.json 存在。';
-    console.error(err);
+    document.getElementById('status').textContent = '索引載入失敗，請確認 search.json 存在。';
   });
 
-// Enter 鍵觸發搜尋
 document.getElementById('searchInput').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') doSearch();
 });
 
 function doSearch() {
   const query = document.getElementById('searchInput').value.trim();
-  if (!query) return;
-  if (searchData.length === 0) {
-    document.getElementById('status').textContent = '索引尚未載入，請稍候...';
-    return;
-  }
+  if (!query || searchData.length === 0) return;
 
   const titleOnly = document.getElementById('titleOnly').checked;
   const exactMatch = document.getElementById('exactMatch').checked;
+  const searchPath = document.getElementById('searchPath').checked;
 
   const keywords = exactMatch ? [query] : query.split(/\s+/).filter(k => k.length > 0);
-
+  lastKeywords = keywords;
   currentResults = [];
 
   for (const item of searchData) {
     const titleLower = item.title.toLowerCase();
     const contentLower = item.content.toLowerCase();
+    const pathLower = (item.path || '').toLowerCase();
 
     let matchCount = 0;
     let allMatch = true;
@@ -295,37 +147,33 @@ function doSearch() {
       const kwLower = kw.toLowerCase();
       const inTitle = titleLower.includes(kwLower);
       const inContent = !titleOnly && contentLower.includes(kwLower);
+      const inPath = searchPath && pathLower.includes(kwLower);
 
-      if (inTitle || inContent) {
-        matchCount++;
-        // 計算出現次數作為相關度
-        const titleHits = (titleLower.split(kwLower).length - 1) * 10; // 標題權重高
+      if (inTitle || inContent || inPath) {
+        const titleHits = (titleLower.split(kwLower).length - 1) * 10;
+        const pathHits = (pathLower.split(kwLower).length - 1) * 5;
         const contentHits = !titleOnly ? (contentLower.split(kwLower).length - 1) : 0;
-        matchCount += titleHits + contentHits;
+        matchCount += titleHits + pathHits + contentHits + 1;
       } else {
         allMatch = false;
       }
     }
 
     if (allMatch && matchCount > 0) {
-      currentResults.push({
-        ...item,
-        score: matchCount
-      });
+      currentResults.push({ ...item, score: matchCount });
     }
   }
 
-  // 按相關度排序
   currentResults.sort((a, b) => b.score - a.score);
-
   currentPage = 1;
-  renderResults(keywords);
+  renderResults();
 }
 
-function renderResults(keywords) {
+function renderResults() {
   const resultsDiv = document.getElementById('results');
   const statusDiv = document.getElementById('status');
   const paginationDiv = document.getElementById('pagination');
+  const keywords = lastKeywords;
 
   if (currentResults.length === 0) {
     statusDiv.textContent = '';
@@ -344,38 +192,40 @@ function renderResults(keywords) {
   let html = '';
   for (const item of pageResults) {
     const snippet = getSnippet(item.content, keywords, 120);
+    const pathHtml = item.path
+      ? `<div class="result-path">📂 ${highlightText(escapeHtml(item.path), keywords)}</div>`
+      : '';
+
     html += `
       <div class="result-item" onclick="openPage('${escapeHtml(item.url)}')">
+        ${pathHtml}
         <div class="result-title">
           <a href="${escapeHtml(item.url)}" target="body" onclick="event.stopPropagation()">
             ${highlightText(escapeHtml(item.title), keywords)}
           </a>
         </div>
         <div class="result-snippet">${snippet}</div>
-        <div class="result-url">${escapeHtml(item.url)}</div>
       </div>`;
   }
   resultsDiv.innerHTML = html;
 
-  // 分頁
   if (totalPages > 1) {
     paginationDiv.innerHTML = `
-      <button onclick="goPage(${currentPage - 1}, [${keywords.map(k => "'" + k.replace(/'/g, "\\'") + "'").join(',')}])" ${currentPage <= 1 ? 'disabled' : ''}>上一頁</button>
+      <button onclick="goPage(${currentPage - 1})" ${currentPage <= 1 ? 'disabled' : ''}>上一頁</button>
       <span class="page-info">${currentPage} / ${totalPages}</span>
-      <button onclick="goPage(${currentPage + 1}, [${keywords.map(k => "'" + k.replace(/'/g, "\\'") + "'").join(',')}])" ${currentPage >= totalPages ? 'disabled' : ''}>下一頁</button>`;
+      <button onclick="goPage(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}>下一頁</button>`;
   } else {
     paginationDiv.innerHTML = '';
   }
 }
 
-function goPage(page, keywords) {
+function goPage(page) {
   currentPage = page;
-  renderResults(keywords);
+  renderResults();
   window.scrollTo(0, 0);
 }
 
 function openPage(url) {
-  // 嘗試在 FRAMESET 的 body frame 中打開
   if (parent && parent.frames && parent.frames['body']) {
     parent.frames['body'].location.href = url;
   } else {
@@ -386,22 +236,16 @@ function openPage(url) {
 function getSnippet(content, keywords, contextLen) {
   if (!content) return '';
   const contentLower = content.toLowerCase();
-
-  // 找到第一個關鍵字出現的位置
   let firstPos = content.length;
   for (const kw of keywords) {
     const pos = contentLower.indexOf(kw.toLowerCase());
     if (pos !== -1 && pos < firstPos) firstPos = pos;
   }
-
-  // 擷取前後文
   let start = Math.max(0, firstPos - contextLen);
   let end = Math.min(content.length, firstPos + contextLen);
   let snippet = content.substring(start, end);
-
   if (start > 0) snippet = '...' + snippet;
   if (end < content.length) snippet = snippet + '...';
-
   return highlightText(escapeHtml(snippet), keywords);
 }
 
