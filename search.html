@@ -275,13 +275,7 @@ function goPage(page) {
   window.scrollTo(0, 0);
 }
 
-function openPage(url) {
-  if (parent && parent.frames && parent.frames['contentFrame']) {
-    parent.frames['contentFrame'].location.href = url;
-  } else {
-    window.open(url, '_blank');
-  }
-}
+penPage
 
 function getSnippet(content, keywords, contextLen) {
   if (!content) return '';
