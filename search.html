@@ -275,7 +275,34 @@ function goPage(page) {
   window.scrollTo(0, 0);
 }
 
-penPage
+function openPage(url) {
+  // 策略 1: 嘗試找名字叫 "contentFrame" 的框架 (我們建議的新名字)
+  if (parent && parent.frames['contentFrame']) {
+    parent.frames['contentFrame'].location.href = url;
+    return;
+  }
+
+  // 策略 2: 嘗試找名字叫 "body" 的框架 (舊名字，預防你沒改成功)
+  if (parent && parent.frames['body']) {
+    parent.frames['body'].location.href = url;
+    return;
+  }
+  
+  // 策略 3: 嘗試找第一個 iframe (不管名字叫什麼，直接抓第一個)
+  // 這招通常是殺手鐧，因為你的主頁右邊通常就是主要的 iframe
+  var frames = parent.document.getElementsByTagName('iframe');
+  for (var i = 0; i < frames.length; i++) {
+    // 如果這個 iframe 不是左側選單 (通常左側選單會在前面或有特定 id)
+    // 這裡簡單判斷：只要 id 不叫 leftFrame 就假設它是右邊的內容框
+    if (frames[i].id !== 'leftFrame' && frames[i].name !== 'left') {
+      frames[i].contentWindow.location.href = url;
+      return;
+    }
+  }
+
+  // 策略 4: 真的找不到才開新視窗 (下下策)
+  window.open(url, '_blank');
+}
 
 function getSnippet(content, keywords, contextLen) {
   if (!content) return '';
