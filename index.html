@@ -238,24 +238,29 @@ function onBodyLoad() {
 }
 
 // ===== 日夜模式 =====
+// ===== 日夜模式 (修正版) =====
 function toggleTheme() {
-  var isDark = !document.body.classList.contains('dark');
-  if (isDark) {
-    document.body.classList.add('dark');
-  } else {
-    document.body.classList.remove('dark');
-  }
+  // 1. 直接在 document.body 上切換 dark 樣式
+  // 使用 classList.toggle 更簡潔，它會自動判斷有沒有這個 class
+  document.body.classList.toggle('dark');
+
+  // 2. 判斷切換後，現在是否包含 dark class
+  var isDark = document.body.classList.contains('dark');
+
+  // 3. 抓取按鈕並更新圖示
   var btn = document.getElementById('themeBtn');
-  if (btn) btn.textContent = isDark ? '☀️' : '🌙';
-  try { localStorage.setItem('theme', isDark ? 'dark' : 'light'); } catch(e) {}
-}
-try {
-  if (localStorage.getItem('theme') === 'dark') {
-    document.body.classList.add('dark');
-    var btn = document.getElementById('themeBtn');
-    if (btn) btn.textContent = '☀️';
+  if (btn) {
+    // 如果現在是暗色模式(isDark)，按鈕顯示太陽(準備切回亮色)，否則顯示月亮
+    btn.textContent = isDark ? '☀️' : '🌙';
   }
-} catch(e) {}
+
+  // 4. 儲存設定到 localStorage (避免報錯加了 try-catch)
+  try {
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  } catch(e) {
+    console.warn('無法儲存主題設定:', e);
+  }
+}
 
 // ===== 回頂部 =====
 function scrollToTop() {
