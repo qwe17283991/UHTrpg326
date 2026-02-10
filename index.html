@@ -238,10 +238,8 @@ function onBodyLoad() {
 }
 
 // ===== 日夜模式 =====
-// ===== 日夜模式 (修正版) =====
 function toggleTheme() {
-  // 1. 直接在 document.body 上切換 dark 樣式
-  // 使用 classList.toggle 更簡潔，它會自動判斷有沒有這個 class
+  // 1. 使用 document.body 確保一定抓得到網頁主體，並切換 'dark' 樣式
   document.body.classList.toggle('dark');
 
   // 2. 判斷切換後，現在是否包含 dark class
@@ -250,11 +248,11 @@ function toggleTheme() {
   // 3. 抓取按鈕並更新圖示
   var btn = document.getElementById('themeBtn');
   if (btn) {
-    // 如果現在是暗色模式(isDark)，按鈕顯示太陽(準備切回亮色)，否則顯示月亮
+    // 如果是暗色模式，顯示太陽(代表可切回亮色)；否則顯示月亮
     btn.textContent = isDark ? '☀️' : '🌙';
   }
 
-  // 4. 儲存設定到 localStorage (避免報錯加了 try-catch)
+  // 4. 儲存設定到 localStorage (防止報錯加上 try-catch)
   try {
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
   } catch(e) {
