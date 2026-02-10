@@ -239,15 +239,23 @@ function onBodyLoad() {
 
 // ===== 日夜模式 =====
 function toggleTheme() {
-  document.body.classList.toggle('dark');
-  const isDark = document.body.classList.contains('dark');
-  document.getElementById('themeBtn').textContent = isDark ? '☀️' : '🌙';
-  localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  var isDark = !document.body.classList.contains('dark');
+  if (isDark) {
+    document.body.classList.add('dark');
+  } else {
+    document.body.classList.remove('dark');
+  }
+  var btn = document.getElementById('themeBtn');
+  if (btn) btn.textContent = isDark ? '☀️' : '🌙';
+  try { localStorage.setItem('theme', isDark ? 'dark' : 'light'); } catch(e) {}
 }
-if (localStorage.getItem('theme') === 'dark') {
-  document.body.classList.add('dark');
-  document.getElementById('themeBtn').textContent = '☀️';
-}
+try {
+  if (localStorage.getItem('theme') === 'dark') {
+    document.body.classList.add('dark');
+    var btn = document.getElementById('themeBtn');
+    if (btn) btn.textContent = '☀️';
+  }
+} catch(e) {}
 
 // ===== 回頂部 =====
 function scrollToTop() {
