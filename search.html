@@ -2,86 +2,65 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>全文搜尋 - 無限流TRPG3.0</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
 
-  /* ===== 這裡的變數名稱現在跟你的 index.html 完全一致 ===== */
-  /* 未來如果要改色，直接從 index.html 複製這塊 :root 蓋掉這裡即可 */
+  /* ===== 變數設定 (與 index.html 同步) ===== */
   :root {
-    --bg-dark: #faf6f0;      /* 整體背景色 */
-    --bg-panel: #f0e8dc;     /* 面板/區塊背景色 */
-    --accent: #c67b47;       /* 強調色 (橘色) */
-    --accent-glow: #c67b4733;/* 強調色光暈 (用於標記背景) */
-    --accent-dim: #a8623a;   /* 強調色變暗 (用於文字強調) */
-    --text: #4a3728;         /* 主要文字 */
-    --text-dim: #9a8575;     /* 次要文字 */
-    --border: #ddd0c0;       /* 邊框 */
-    
-    /* 搜尋頁面專用額外設定 (基於上述顏色延伸) */
-    --input-bg: #ffffff;     /* 輸入框背景 (通常比背景亮) */
+    --bg-dark: #faf6f0;      
+    --bg-panel: #f0e8dc;     
+    --accent: #c67b47;       
+    --accent-glow: #c67b4733;
+    --accent-dim: #a8623a;   
+    --text: #4a3728;         
+    --text-dim: #9a8575;     
+    --border: #ddd0c0;       
+    --input-bg: #ffffff;     
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
     font-family: 'Noto Sans TC', sans-serif;
-    background: var(--bg-dark); /* 使用主頁背景 */
-    color: var(--text);         /* 使用主頁文字 */
+    background: var(--bg-dark); 
+    color: var(--text);         
     min-height: 100vh;
-    padding: 20px;
+    padding: 20px; /* 預設寬鬆邊距 */
   }
 
   .search-container { max-width: 800px; margin: 0 auto; }
 
   h1 { font-size: 1.4em; color: var(--accent); margin-bottom: 16px; font-weight: 700; letter-spacing: 1px; }
 
-/* ===== 修正後的搜尋框樣式 (防擠壓) ===== */
-  .search-box { 
-    display: flex; 
-    gap: 8px; 
-    margin-bottom: 8px;
-    /* 關鍵：允許換行！當側邊欄太窄時，按鈕會自動跑到下一行 */
-    flex-wrap: wrap; 
-  }
+  /* ===== 搜尋框樣式 (預設橫排) ===== */
+  .search-box { display: flex; gap: 8px; margin-bottom: 8px; }
 
   #searchInput {
-    flex: 1; 
-    padding: 10px 16px; 
-    font-size: 16px;
+    flex: 1; padding: 10px 16px; font-size: 16px;
     border: 2px solid var(--border); 
     border-radius: 8px;
     background: var(--input-bg); 
     color: var(--text); 
     outline: none;
-    font-family: 'Noto Sans TC', sans-serif; 
-    transition: border-color 0.2s;
-    /* 關鍵：設定最小寬度，如果空間小於這個值，就會強制換行 */
-    min-width: 150px; 
+    font-family: 'Noto Sans TC', sans-serif; transition: border-color 0.2s;
+    min-width: 0; /* 防止 flex 子元素溢出 */
   }
-  
   #searchInput:focus { border-color: var(--accent); }
   #searchInput::placeholder { color: var(--text-dim); }
 
   #searchBtn {
-    padding: 10px 24px; 
-    font-size: 16px; 
+    padding: 10px 24px; font-size: 16px; 
     background: var(--accent); 
     color: white; 
-    border: none; 
-    border-radius: 8px; 
-    cursor: pointer;
-    font-family: 'Noto Sans TC', sans-serif; 
-    font-weight: 500;
-    transition: background 0.2s; 
-    white-space: nowrap;
-    /* 關鍵：如果換行了，讓按鈕佔滿整行，比較美觀 */
-    flex-grow: 1; 
-    text-align: center;
+    border: none; border-radius: 8px; cursor: pointer;
+    font-family: 'Noto Sans TC', sans-serif; font-weight: 500;
+    transition: background 0.2s; white-space: nowrap;
   }
   #searchBtn:hover { background: var(--accent-dim); }
 
-  .search-options { display: flex; gap: 16px; margin-bottom: 16px; font-size: 14px; color: var(--text-dim); }
+  .search-options { display: flex; gap: 16px; margin-bottom: 16px; font-size: 14px; color: var(--text-dim); flex-wrap: wrap; }
   .search-options label { cursor: pointer; display: flex; align-items: center; gap: 4px; }
   .search-options input[type="checkbox"] { accent-color: var(--accent); }
 
@@ -89,7 +68,7 @@
   #results { display: flex; flex-direction: column; gap: 12px; }
 
   .result-item {
-    background: #ffffff; /* 搜尋結果卡片用白色凸顯，或者你可以改用 var(--bg-panel) */
+    background: #ffffff; 
     border: 1px solid var(--border); border-radius: 8px;
     padding: 16px; transition: border-color 0.2s; cursor: pointer;
   }
@@ -106,7 +85,6 @@
 
   .result-snippet { font-size: 14px; line-height: 1.6; color: var(--text-dim); word-break: break-all; }
   
-  /* 關鍵字高亮：使用你的強調色光暈 */
   .result-snippet mark { 
     background: var(--accent-glow); 
     color: var(--accent-dim); 
@@ -127,6 +105,29 @@
   .pagination button:hover { border-color: var(--accent); }
   .pagination button:disabled { opacity: 0.3; cursor: default; }
   .pagination .page-info { padding: 8px 12px; color: var(--text-dim); font-size: 14px; display: flex; align-items: center; }
+
+  /* =========================================
+     ★ 關鍵修正：針對窄側邊欄的強制樣式 ★
+     當視窗寬度小於 380px 時 (剛好是你側邊欄的預設寬度)
+     ========================================= */
+  @media screen and (max-width: 380px) {
+    body { padding: 12px; } /* 縮小周圍留白，爭取空間 */
+    
+    .search-box { 
+      flex-direction: column; /* 強制變成直排 */
+      gap: 10px;
+    }
+    
+    #searchBtn { 
+      width: 100%; /* 按鈕變為全寬，超好按 */
+      text-align: center;
+    }
+
+    .search-options { 
+      flex-direction: column; /* 選項也變直排，防止太擠 */
+      gap: 8px;
+    }
+  }
 </style>
 </head>
 <body>
@@ -135,7 +136,7 @@
   <h1>🔍 無限流TRPG3.0 全文搜尋</h1>
 
   <div class="search-box">
-    <input type="text" id="searchInput" placeholder="輸入關鍵字搜尋標題與內文..." autofocus>
+    <input type="text" id="searchInput" placeholder="輸入關鍵字..." autofocus>
     <button id="searchBtn" onclick="doSearch()">搜尋</button>
   </div>
 
@@ -151,9 +152,6 @@
 </div>
 
 <script>
-// ===== 這裡已經移除了所有同步主題的 JavaScript 代碼 =====
-// ===== 現在它只會單純顯示上面 CSS 設定的顏色 =====
-
 let searchData = [];
 let currentResults = [];
 let currentPage = 1;
@@ -248,7 +246,6 @@ function renderResults() {
       ? `<div class="result-path">📂 ${highlightText(escapeHtml(item.path), keywords)}</div>`
       : '';
 
-    // 注意：這裡 target="contentFrame" 
     html += `
       <div class="result-item" onclick="openPage('${escapeHtml(item.url)}')">
         ${pathHtml}
