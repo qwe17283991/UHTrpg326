@@ -153,14 +153,14 @@
 <body>
 
 <div class="topbar">
-  <button class="hamburger" id="hamburgerBtn" onclick="toggleSidebar()">
+  <button class="hamburger" id="hamburgerBtn">
     <span></span><span></span><span></span>
   </button>
   <span class="topbar-title">無限流TRPG3.0</span>
   <div class="topbar-spacer"></div>
-  <button class="topbar-btn btn-primary" onclick="showSearch()">🔍 <span class="btn-label">全文搜尋</span></button>
-  <button class="topbar-btn btn-outline" onclick="showIndex()">📋 <span class="btn-label">索引</span></button>
-  <button class="topbar-btn btn-outline" onclick="toggleTheme()" id="themeBtn">🌙</button>
+  <button class="topbar-btn btn-primary" id="searchBtn">🔍 <span class="btn-label">全文搜尋</span></button>
+  <button class="topbar-btn btn-outline" id="indexBtn">📋 <span class="btn-label">索引</span></button>
+  <button class="topbar-btn btn-outline" id="themeBtn">🌙</button>
 </div>
 
 <div class="main">
@@ -176,22 +176,25 @@
         <div class="sub">← 從左側索引選擇內容開始閱讀</div>
       </div>
     </div>
-    <iframe id="bodyFrame" name="body" onload="onBodyLoad()"></iframe>
+    <iframe id="bodyFrame" name="body"></iframe>
   </div>
 </div>
 
-<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
-<button id="scrollTopBtn" onclick="scrollToTop()">▲</button>
+<div class="overlay" id="overlay"></div>
+<button id="scrollTopBtn">▲</button>
 
 <script>
-const sidebar = document.getElementById('sidebar');
-const overlay = document.getElementById('overlay');
-const hamburger = document.getElementById('hamburgerBtn');
-const bodyFrame = document.getElementById('bodyFrame');
-const placeholder = document.getElementById('placeholder');
-const divider = document.getElementById('divider');
-const dragOverlay = document.getElementById('dragOverlay');
-const scrollTopBtn = document.getElementById('scrollTopBtn');
+var sidebar = document.getElementById('sidebar');
+var overlay = document.getElementById('overlay');
+var hamburger = document.getElementById('hamburgerBtn');
+var bodyFrame = document.getElementById('bodyFrame');
+var placeholder = document.getElementById('placeholder');
+var divider = document.getElementById('divider');
+var dragOverlay = document.getElementById('dragOverlay');
+var scrollTopBtn = document.getElementById('scrollTopBtn');
+var themeBtn = document.getElementById('themeBtn');
+var searchBtn = document.getElementById('searchBtn');
+var indexBtn = document.getElementById('indexBtn');
 
 // ===== 側邊欄 =====
 function toggleSidebar() {
@@ -224,7 +227,7 @@ function showIndex() {
 // ===== 右側載入 =====
 function onBodyLoad() {
   try {
-    const loc = bodyFrame.contentWindow.location.href;
+    var loc = bodyFrame.contentWindow.location.href;
     if (loc && loc !== 'about:blank') {
       placeholder.style.display = 'none';
       bodyFrame.style.display = 'block';
@@ -239,25 +242,10 @@ function onBodyLoad() {
 
 // ===== 日夜模式 =====
 function toggleTheme() {
-  // 1. 使用 document.body 確保一定抓得到網頁主體，並切換 'dark' 樣式
   document.body.classList.toggle('dark');
-
-  // 2. 判斷切換後，現在是否包含 dark class
   var isDark = document.body.classList.contains('dark');
-
-  // 3. 抓取按鈕並更新圖示
-  var btn = document.getElementById('themeBtn');
-  if (btn) {
-    // 如果是暗色模式，顯示太陽(代表可切回亮色)；否則顯示月亮
-    btn.textContent = isDark ? '☀️' : '🌙';
-  }
-
-  // 4. 儲存設定到 localStorage (防止報錯加上 try-catch)
-  try {
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-  } catch(e) {
-    console.warn('無法儲存主題設定:', e);
-  }
+  themeBtn.textContent = isDark ? '☀️' : '🌙';
+  try { localStorage.setItem('theme', isDark ? 'dark' : 'light'); } catch(e) {}
 }
 
 // ===== 回頂部 =====
@@ -267,16 +255,25 @@ function scrollToTop() {
 
 function setupScrollListener() {
   try {
-    const doc = bodyFrame.contentDocument || bodyFrame.contentWindow.document;
+    var doc = bodyFrame.contentDocument || bodyFrame.contentWindow.document;
     (doc.defaultView || bodyFrame.contentWindow).addEventListener('scroll', function() {
-      const scrollY = this.scrollY || this.pageYOffset || 0;
-      scrollTopBtn.classList.toggle('show', scrollY > 200);
+      var sy = this.scrollY || this.pageYOffset || 0;
+      scrollTopBtn.classList.toggle('show', sy > 200);
     });
   } catch(e) {}
 }
 
-// ===== 拖曳分隔條（修正版）=====
-let isDragging = false;
+// ===== 用 addEventListener 綁定所有事件 =====
+hamburger.addEventListener('click', toggleSidebar);
+searchBtn.addEventListener('click', showSearch);
+indexBtn.addEventListener('click', showIndex);
+themeBtn.addEventListener('click', toggleTheme);
+overlay.addEventListener('click', closeSidebar);
+scrollTopBtn.addEventListener('click', scrollToTop);
+bodyFrame.addEventListener('load', onBodyLoad);
+
+// ===== 拖曳分隔條 =====
+var isDragging = false;
 
 divider.addEventListener('mousedown', startDrag);
 divider.addEventListener('touchstart', startDrag, { passive: false });
@@ -293,8 +290,8 @@ document.addEventListener('touchmove', onDrag, { passive: false });
 
 function onDrag(e) {
   if (!isDragging) return;
-  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-  const newWidth = Math.max(200, Math.min(clientX, window.innerWidth - 300));
+  var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  var newWidth = Math.max(200, Math.min(clientX, window.innerWidth - 300));
   sidebar.style.width = newWidth + 'px';
   e.preventDefault();
 }
@@ -309,9 +306,17 @@ function endDrag() {
   dragOverlay.classList.remove('active');
 }
 
-window.addEventListener('resize', () => {
+window.addEventListener('resize', function() {
   if (window.innerWidth > 768) { closeSidebar(); sidebar.style.width = ''; }
 });
+
+// ===== 頁面載入時還原主題 =====
+try {
+  if (localStorage.getItem('theme') === 'dark') {
+    document.body.classList.add('dark');
+    themeBtn.textContent = '☀️';
+  }
+} catch(e) {}
 </script>
 
 </body>
