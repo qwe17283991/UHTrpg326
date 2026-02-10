@@ -36,27 +36,48 @@
 
   h1 { font-size: 1.4em; color: var(--accent); margin-bottom: 16px; font-weight: 700; letter-spacing: 1px; }
 
-  .search-box { display: flex; gap: 8px; margin-bottom: 8px; }
+/* ===== 修正後的搜尋框樣式 (防擠壓) ===== */
+  .search-box { 
+    display: flex; 
+    gap: 8px; 
+    margin-bottom: 8px;
+    /* 關鍵：允許換行！當側邊欄太窄時，按鈕會自動跑到下一行 */
+    flex-wrap: wrap; 
+  }
 
   #searchInput {
-    flex: 1; padding: 10px 16px; font-size: 16px;
+    flex: 1; 
+    padding: 10px 16px; 
+    font-size: 16px;
     border: 2px solid var(--border); 
     border-radius: 8px;
     background: var(--input-bg); 
     color: var(--text); 
     outline: none;
-    font-family: 'Noto Sans TC', sans-serif; transition: border-color 0.2s;
+    font-family: 'Noto Sans TC', sans-serif; 
+    transition: border-color 0.2s;
+    /* 關鍵：設定最小寬度，如果空間小於這個值，就會強制換行 */
+    min-width: 150px; 
   }
+  
   #searchInput:focus { border-color: var(--accent); }
   #searchInput::placeholder { color: var(--text-dim); }
 
   #searchBtn {
-    padding: 10px 24px; font-size: 16px; 
+    padding: 10px 24px; 
+    font-size: 16px; 
     background: var(--accent); 
-    color: white; /* 按鈕文字固定白色比較好看 */
-    border: none; border-radius: 8px; cursor: pointer;
-    font-family: 'Noto Sans TC', sans-serif; font-weight: 500;
-    transition: background 0.2s; white-space: nowrap;
+    color: white; 
+    border: none; 
+    border-radius: 8px; 
+    cursor: pointer;
+    font-family: 'Noto Sans TC', sans-serif; 
+    font-weight: 500;
+    transition: background 0.2s; 
+    white-space: nowrap;
+    /* 關鍵：如果換行了，讓按鈕佔滿整行，比較美觀 */
+    flex-grow: 1; 
+    text-align: center;
   }
   #searchBtn:hover { background: var(--accent-dim); }
 
