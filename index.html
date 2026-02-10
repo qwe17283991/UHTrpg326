@@ -1,13 +1,307 @@
-<HTML>
-<HEAD>
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
 <meta charset="UTF-8">
-<TITLE>無限流TRPG3.0</TITLE>
-</HEAD>
-<FRAMESET border=4 rows="40, *">
-  <FRAME name=top marginWidth=5 marginHeight=2 src="topbar.html" scrolling="no" noresize>
-  <FRAMESET border=4 cols="400, *">
-    <FRAME name=left marginWidth=5 marginHeight=5 src="___left.htm">
-    <FRAME name=body marginWidth=5 marginHeight=5 src="">
-  </FRAMESET>
-</FRAMESET>
-</HTML>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>無限流TRPG3.0</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=ZCOOL+QingKe+HuangYou&display=swap');
+
+  /* ===== 日間模式（預設）===== */
+  :root {
+    --bg-dark: #faf6f0;
+    --bg-panel: #f0e8dc;
+    --accent: #c67b47;
+    --accent-glow: #c67b4733;
+    --accent-dim: #a8623a;
+    --text: #4a3728;
+    --text-dim: #9a8575;
+    --border: #ddd0c0;
+    --sidebar-w: 380px;
+  }
+
+  /* ===== 夜間模式 ===== */
+  body.dark {
+    --bg-dark: #0f0f1a;
+    --bg-panel: #161625;
+    --accent: #e94560;
+    --accent-glow: #e9456066;
+    --accent-dim: #c73650;
+    --text: #d8d8e8;
+    --text-dim: #888;
+    --border: #2a2a40;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; background: var(--bg-dark); color: var(--text); }
+  body { font-family: 'Noto Sans TC', sans-serif; display: flex; flex-direction: column; }
+
+  /* ===== 頂部列 ===== */
+  .topbar {
+    height: 48px; background: var(--bg-panel); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; padding: 0 16px; gap: 10px; flex-shrink: 0; z-index: 100;
+  }
+  .topbar-title {
+    font-family: 'ZCOOL QingKe HuangYou', sans-serif;
+    font-size: 1.2em; color: var(--accent); letter-spacing: 2px; white-space: nowrap;
+  }
+  .topbar-spacer { flex: 1; }
+  .topbar-btn {
+    padding: 5px 14px; font-size: 13px; border: none; border-radius: 6px;
+    cursor: pointer; font-family: 'Noto Sans TC', sans-serif; font-weight: 500;
+    transition: all 0.2s; white-space: nowrap;
+  }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: var(--accent-dim); }
+  .btn-outline { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+  .btn-outline:hover { background: var(--accent-glow); }
+
+  /* 漢堡按鈕 */
+  .hamburger {
+    display: none; width: 36px; height: 36px; background: none; border: none;
+    cursor: pointer; flex-direction: column; justify-content: center; align-items: center; gap: 5px;
+  }
+  .hamburger span {
+    display: block; width: 22px; height: 2px; background: var(--text);
+    border-radius: 2px; transition: all 0.3s;
+  }
+  .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+  .hamburger.active span:nth-child(2) { opacity: 0; }
+  .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+
+  /* ===== 主要區域 ===== */
+  .main { flex: 1; display: flex; overflow: hidden; position: relative; }
+
+  /* ===== 左側面板 ===== */
+  .sidebar {
+    width: var(--sidebar-w); background: var(--bg-panel); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden;
+  }
+  .sidebar iframe { width: 100%; height: 100%; border: none; background: var(--bg-panel); }
+
+  /* ===== 分隔條 ===== */
+  .divider {
+    width: 6px; background: var(--border); cursor: col-resize;
+    flex-shrink: 0; transition: background 0.15s; position: relative;
+  }
+  .divider::after {
+    content: ''; position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 2px; height: 30px; border-radius: 2px;
+    background: var(--text-dim); opacity: 0.4;
+  }
+  .divider:hover, .divider.dragging { background: var(--accent); }
+  .divider:hover::after, .divider.dragging::after { opacity: 0; }
+
+  /* 拖曳遮罩層：拖曳時蓋住 iframe 防止吃掉滑鼠事件 */
+  .drag-overlay {
+    display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 10; cursor: col-resize;
+  }
+  .drag-overlay.active { display: block; }
+
+  /* ===== 右側內容 ===== */
+  .content { flex: 1; overflow: hidden; background: white; position: relative; }
+  .content iframe { width: 100%; height: 100%; border: none; display: none; }
+
+  .placeholder {
+    display: flex; align-items: center; justify-content: center;
+    height: 100%; text-align: center; padding: 20px; background: var(--bg-dark);
+  }
+  .placeholder .logo {
+    font-family: 'ZCOOL QingKe HuangYou', sans-serif;
+    font-size: 2.5em; color: var(--accent); margin-bottom: 12px; letter-spacing: 4px;
+  }
+  .placeholder .sub { color: var(--text-dim); font-size: 0.85em; }
+
+  /* ===== 回頂按鈕 ===== */
+  #scrollTopBtn {
+    position: fixed; bottom: 24px; right: 24px; z-index: 200;
+    width: 44px; height: 44px; border-radius: 50%;
+    background: var(--accent); color: white; border: none;
+    font-size: 18px; cursor: pointer; opacity: 0;
+    pointer-events: none; transition: opacity 0.3s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  #scrollTopBtn.show { opacity: 0.8; pointer-events: auto; }
+  #scrollTopBtn:hover { opacity: 1; }
+
+  /* ===== 遮罩 ===== */
+  .overlay {
+    display: none; position: fixed; top: 48px; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5); z-index: 49;
+  }
+
+  /* ===== 手機版 ===== */
+  @media (max-width: 768px) {
+    :root { --sidebar-w: 85vw; }
+    .hamburger { display: flex; }
+    .sidebar {
+      position: fixed; top: 48px; left: 0; bottom: 0; z-index: 50;
+      transform: translateX(-100%); transition: transform 0.3s ease;
+      box-shadow: 4px 0 20px rgba(0,0,0,0.5);
+    }
+    .sidebar.open { transform: translateX(0); }
+    .overlay.show { display: block; }
+    .divider { display: none; }
+    .topbar-title { font-size: 1em; }
+    .btn-label { display: none; }
+    #scrollTopBtn { bottom: 16px; right: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="hamburger" id="hamburgerBtn" onclick="toggleSidebar()">
+    <span></span><span></span><span></span>
+  </button>
+  <span class="topbar-title">無限流TRPG3.0</span>
+  <div class="topbar-spacer"></div>
+  <button class="topbar-btn btn-primary" onclick="showSearch()">🔍 <span class="btn-label">全文搜尋</span></button>
+  <button class="topbar-btn btn-outline" onclick="showIndex()">📋 <span class="btn-label">索引</span></button>
+  <button class="topbar-btn btn-outline" onclick="toggleTheme()" id="themeBtn">🌙</button>
+</div>
+
+<div class="main">
+  <div class="sidebar" id="sidebar">
+    <iframe id="leftFrame" name="left" src="___left.htm"></iframe>
+  </div>
+  <div class="divider" id="divider"></div>
+  <div class="drag-overlay" id="dragOverlay"></div>
+  <div class="content" id="contentArea">
+    <div class="placeholder" id="placeholder">
+      <div>
+        <div class="logo">無限流TRPG3.0</div>
+        <div class="sub">← 從左側索引選擇內容開始閱讀</div>
+      </div>
+    </div>
+    <iframe id="bodyFrame" name="body" onload="onBodyLoad()"></iframe>
+  </div>
+</div>
+
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+<button id="scrollTopBtn" onclick="scrollToTop()">▲</button>
+
+<script>
+const sidebar = document.getElementById('sidebar');
+const overlay = document.getElementById('overlay');
+const hamburger = document.getElementById('hamburgerBtn');
+const bodyFrame = document.getElementById('bodyFrame');
+const placeholder = document.getElementById('placeholder');
+const divider = document.getElementById('divider');
+const dragOverlay = document.getElementById('dragOverlay');
+const scrollTopBtn = document.getElementById('scrollTopBtn');
+
+// ===== 側邊欄 =====
+function toggleSidebar() {
+  sidebar.classList.toggle('open');
+  overlay.classList.toggle('show');
+  hamburger.classList.toggle('active');
+}
+function closeSidebar() {
+  sidebar.classList.remove('open');
+  overlay.classList.remove('show');
+  hamburger.classList.remove('active');
+}
+function showSearch() {
+  document.getElementById('leftFrame').src = 'search.html';
+  if (window.innerWidth <= 768) {
+    sidebar.classList.add('open');
+    overlay.classList.add('show');
+    hamburger.classList.add('active');
+  }
+}
+function showIndex() {
+  document.getElementById('leftFrame').src = '___left.htm';
+  if (window.innerWidth <= 768) {
+    sidebar.classList.add('open');
+    overlay.classList.add('show');
+    hamburger.classList.add('active');
+  }
+}
+
+// ===== 右側載入 =====
+function onBodyLoad() {
+  try {
+    const loc = bodyFrame.contentWindow.location.href;
+    if (loc && loc !== 'about:blank') {
+      placeholder.style.display = 'none';
+      bodyFrame.style.display = 'block';
+      if (window.innerWidth <= 768) closeSidebar();
+      setupScrollListener();
+    }
+  } catch(e) {
+    placeholder.style.display = 'none';
+    bodyFrame.style.display = 'block';
+  }
+}
+
+// ===== 日夜模式 =====
+function toggleTheme() {
+  document.body.classList.toggle('dark');
+  const isDark = document.body.classList.contains('dark');
+  document.getElementById('themeBtn').textContent = isDark ? '☀️' : '🌙';
+  localStorage.setItem('theme', isDark ? 'dark' : 'light');
+}
+if (localStorage.getItem('theme') === 'dark') {
+  document.body.classList.add('dark');
+  document.getElementById('themeBtn').textContent = '☀️';
+}
+
+// ===== 回頂部 =====
+function scrollToTop() {
+  try { bodyFrame.contentWindow.scrollTo({ top: 0, behavior: 'smooth' }); } catch(e) {}
+}
+
+function setupScrollListener() {
+  try {
+    const doc = bodyFrame.contentDocument || bodyFrame.contentWindow.document;
+    (doc.defaultView || bodyFrame.contentWindow).addEventListener('scroll', function() {
+      const scrollY = this.scrollY || this.pageYOffset || 0;
+      scrollTopBtn.classList.toggle('show', scrollY > 200);
+    });
+  } catch(e) {}
+}
+
+// ===== 拖曳分隔條（修正版）=====
+let isDragging = false;
+
+divider.addEventListener('mousedown', startDrag);
+divider.addEventListener('touchstart', startDrag, { passive: false });
+
+function startDrag(e) {
+  isDragging = true;
+  divider.classList.add('dragging');
+  dragOverlay.classList.add('active');
+  e.preventDefault();
+}
+
+document.addEventListener('mousemove', onDrag);
+document.addEventListener('touchmove', onDrag, { passive: false });
+
+function onDrag(e) {
+  if (!isDragging) return;
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const newWidth = Math.max(200, Math.min(clientX, window.innerWidth - 300));
+  sidebar.style.width = newWidth + 'px';
+  e.preventDefault();
+}
+
+document.addEventListener('mouseup', endDrag);
+document.addEventListener('touchend', endDrag);
+
+function endDrag() {
+  if (!isDragging) return;
+  isDragging = false;
+  divider.classList.remove('dragging');
+  dragOverlay.classList.remove('active');
+}
+
+window.addEventListener('resize', () => {
+  if (window.innerWidth > 768) { closeSidebar(); sidebar.style.width = ''; }
+});
+</script>
+
+</body>
+</html>
