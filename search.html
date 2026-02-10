@@ -6,106 +6,104 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
 
-  /* ===== CSS 變數設定 (核心修改) ===== */
+  /* ===== 這裡的變數名稱現在跟你的 index.html 完全一致 ===== */
+  /* 未來如果要改色，直接從 index.html 複製這塊 :root 蓋掉這裡即可 */
   :root {
-    /* 預設為日間模式 (配色參考你的主頁 index.html) */
-    --bg-color: #faf6f0;         /* 背景色 */
-    --text-color: #4a3728;       /* 文字色 */
-    --input-bg: #ffffff;         /* 輸入框背景 */
-    --item-bg: #fffbf5;          /* 搜尋結果區塊背景 */
-    --border-color: #ddd0c0;     /* 邊框顏色 */
-    --accent-color: #c67b47;     /* 強調色 (橘色) */
-    --accent-hover: #a8623a;     /* 按鈕滑鼠經過 */
-    --text-dim: #888;            /* 次要文字 */
-    --highlight-bg: #c67b4733;   /* 關鍵字螢光筆底色 */
-    --highlight-text: #a8623a;   /* 關鍵字文字色 */
-  }
-
-  /* 當 body 擁有 dark class 時，覆蓋上述變數 */
-  body.dark {
-    --bg-color: #1a1a2e;
-    --text-color: #e0e0e0;
-    --input-bg: #16213e;
-    --item-bg: #16213e;
-    --border-color: #2a2a4a;
-    --accent-color: #e94560;     /* 夜間強調色 (粉紅) */
-    --accent-hover: #c73650;
-    --text-dim: #999;
-    --highlight-bg: #e9456044;
-    --highlight-text: #ff8a9e;
+    --bg-dark: #faf6f0;      /* 整體背景色 */
+    --bg-panel: #f0e8dc;     /* 面板/區塊背景色 */
+    --accent: #c67b47;       /* 強調色 (橘色) */
+    --accent-glow: #c67b4733;/* 強調色光暈 (用於標記背景) */
+    --accent-dim: #a8623a;   /* 強調色變暗 (用於文字強調) */
+    --text: #4a3728;         /* 主要文字 */
+    --text-dim: #9a8575;     /* 次要文字 */
+    --border: #ddd0c0;       /* 邊框 */
+    
+    /* 搜尋頁面專用額外設定 (基於上述顏色延伸) */
+    --input-bg: #ffffff;     /* 輸入框背景 (通常比背景亮) */
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
     font-family: 'Noto Sans TC', sans-serif;
-    background: var(--bg-color);
-    color: var(--text-color);
+    background: var(--bg-dark); /* 使用主頁背景 */
+    color: var(--text);         /* 使用主頁文字 */
     min-height: 100vh;
     padding: 20px;
-    transition: background 0.3s, color 0.3s; /* 加入平滑過渡 */
   }
 
   .search-container { max-width: 800px; margin: 0 auto; }
 
-  h1 { font-size: 1.4em; color: var(--accent-color); margin-bottom: 16px; font-weight: 700; letter-spacing: 1px; }
+  h1 { font-size: 1.4em; color: var(--accent); margin-bottom: 16px; font-weight: 700; letter-spacing: 1px; }
 
   .search-box { display: flex; gap: 8px; margin-bottom: 8px; }
 
   #searchInput {
     flex: 1; padding: 10px 16px; font-size: 16px;
-    border: 2px solid var(--border-color); border-radius: 8px;
-    background: var(--input-bg); color: var(--text-color); outline: none;
+    border: 2px solid var(--border); 
+    border-radius: 8px;
+    background: var(--input-bg); 
+    color: var(--text); 
+    outline: none;
     font-family: 'Noto Sans TC', sans-serif; transition: border-color 0.2s;
   }
-  #searchInput:focus { border-color: var(--accent-color); }
+  #searchInput:focus { border-color: var(--accent); }
   #searchInput::placeholder { color: var(--text-dim); }
 
   #searchBtn {
-    padding: 10px 24px; font-size: 16px; background: var(--accent-color); color: white;
+    padding: 10px 24px; font-size: 16px; 
+    background: var(--accent); 
+    color: white; /* 按鈕文字固定白色比較好看 */
     border: none; border-radius: 8px; cursor: pointer;
     font-family: 'Noto Sans TC', sans-serif; font-weight: 500;
     transition: background 0.2s; white-space: nowrap;
   }
-  #searchBtn:hover { background: var(--accent-hover); }
+  #searchBtn:hover { background: var(--accent-dim); }
 
   .search-options { display: flex; gap: 16px; margin-bottom: 16px; font-size: 14px; color: var(--text-dim); }
   .search-options label { cursor: pointer; display: flex; align-items: center; gap: 4px; }
-  .search-options input[type="checkbox"] { accent-color: var(--accent-color); }
+  .search-options input[type="checkbox"] { accent-color: var(--accent); }
 
   #status { padding: 12px 0; font-size: 14px; color: var(--text-dim); }
   #results { display: flex; flex-direction: column; gap: 12px; }
 
   .result-item {
-    background: var(--item-bg); border: 1px solid var(--border-color); border-radius: 8px;
+    background: #ffffff; /* 搜尋結果卡片用白色凸顯，或者你可以改用 var(--bg-panel) */
+    border: 1px solid var(--border); border-radius: 8px;
     padding: 16px; transition: border-color 0.2s; cursor: pointer;
   }
-  .result-item:hover { border-color: var(--accent-color); }
+  .result-item:hover { border-color: var(--accent); }
 
   .result-path {
-    font-size: 12px; color: var(--accent-color); margin-bottom: 6px; opacity: 0.8;
+    font-size: 12px; color: var(--accent); margin-bottom: 6px; opacity: 0.8;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
 
-  .result-title { font-size: 1.1em; font-weight: 700; color: var(--accent-color); margin-bottom: 6px; }
+  .result-title { font-size: 1.1em; font-weight: 700; color: var(--accent); margin-bottom: 6px; }
   .result-title a { color: inherit; text-decoration: none; }
   .result-title a:hover { text-decoration: underline; }
 
   .result-snippet { font-size: 14px; line-height: 1.6; color: var(--text-dim); word-break: break-all; }
-  .result-snippet mark { background: var(--highlight-bg); color: var(--highlight-text); padding: 1px 2px; border-radius: 2px; }
-
-  .result-url { font-size: 12px; color: var(--text-dim); margin-top: 6px; }
+  
+  /* 關鍵字高亮：使用你的強調色光暈 */
+  .result-snippet mark { 
+    background: var(--accent-glow); 
+    color: var(--accent-dim); 
+    padding: 1px 2px; border-radius: 2px; 
+  }
 
   .no-results { text-align: center; padding: 40px; color: var(--text-dim); font-size: 16px; }
   .result-count { font-size: 14px; color: var(--text-dim); margin-bottom: 12px; }
 
   .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 20px; }
   .pagination button {
-    padding: 8px 16px; background: var(--item-bg); color: var(--text-color);
-    border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;
+    padding: 8px 16px; 
+    background: var(--bg-panel); 
+    color: var(--text);
+    border: 1px solid var(--border); border-radius: 6px; cursor: pointer;
     font-family: 'Noto Sans TC', sans-serif;
   }
-  .pagination button:hover { border-color: var(--accent-color); }
+  .pagination button:hover { border-color: var(--accent); }
   .pagination button:disabled { opacity: 0.3; cursor: default; }
   .pagination .page-info { padding: 8px 12px; color: var(--text-dim); font-size: 14px; display: flex; align-items: center; }
 </style>
@@ -132,39 +130,8 @@
 </div>
 
 <script>
-// ===== 核心修改：同步父視窗的主題模式 =====
-function syncThemeFromParent() {
-  try {
-    // 檢查是否有父視窗 (index.html)
-    if (window.parent && window.parent.document) {
-      // 檢查父視窗的 body 是否有 'dark' class
-      const isParentDark = window.parent.document.body.classList.contains('dark');
-      if (isParentDark) {
-        document.body.classList.add('dark');
-      } else {
-        document.body.classList.remove('dark');
-      }
-    }
-  } catch (e) {
-    // 如果跨網域或無法存取父視窗，則不報錯
-    console.log('無法同步主題:', e);
-  }
-}
-
-// 1. 網頁載入時先同步一次
-syncThemeFromParent();
-
-// 2. 建立觀察者：即時監聽父視窗的 class 變化
-try {
-  if (window.parent && window.parent.document) {
-    const observer = new MutationObserver(function(mutations) {
-      syncThemeFromParent();
-    });
-    // 監聽父視窗 body 的屬性變化 (主要是 class)
-    observer.observe(window.parent.document.body, { attributes: true, attributeFilter: ['class'] });
-  }
-} catch(e) {}
-// ==========================================
+// ===== 這裡已經移除了所有同步主題的 JavaScript 代碼 =====
+// ===== 現在它只會單純顯示上面 CSS 設定的顏色 =====
 
 let searchData = [];
 let currentResults = [];
@@ -260,7 +227,7 @@ function renderResults() {
       ? `<div class="result-path">📂 ${highlightText(escapeHtml(item.path), keywords)}</div>`
       : '';
 
-    // 注意：這裡 target="contentFrame" 要對應你 index.html 修改後的 iframe 名稱
+    // 注意：這裡 target="contentFrame" 
     html += `
       <div class="result-item" onclick="openPage('${escapeHtml(item.url)}')">
         ${pathHtml}
@@ -291,12 +258,8 @@ function goPage(page) {
 }
 
 function openPage(url) {
-  // 嘗試在父視窗的 contentFrame 開啟
   if (parent && parent.frames && parent.frames['contentFrame']) {
     parent.frames['contentFrame'].location.href = url;
-  } else if (parent && parent.frames && parent.frames['body']) {
-    // 兼容舊名稱 'body'
-    parent.frames['body'].location.href = url;
   } else {
     window.open(url, '_blank');
   }
