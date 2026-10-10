@@ -186,22 +186,38 @@ function onIndexProgress() {
   }
 }
 
+// 索引用 <script> 載入（search-index/*.js 會呼叫 searchIndexLoaded），
+// 因為 fetch 在 file:// 本地開啟時會被瀏覽器擋下，<script> 則不會。
+const IS_LOCAL = location.protocol === 'file:';
+const indexCallbacks = {};
+
+function searchIndexLoaded(key, value) {
+  if (indexCallbacks[key]) indexCallbacks[key](value);
+}
+
+function loadIndexScript(file, query) {
+  return new Promise((resolve, reject) => {
+    const key = file === 'manifest.js' ? 'manifest' : file === 'titles.js' ? 'titles' : file;
+    indexCallbacks[key] = value => { delete indexCallbacks[key]; resolve(value); };
+    const s = document.createElement('script');
+    s.src = 'search-index/' + file + (IS_LOCAL ? '' : query);
+    s.onerror = () => { delete indexCallbacks[key]; reject(new Error(file)); };
+    document.head.appendChild(s);
+  });
+}
+
 // 優先使用 search-index/ 分段索引（標題先載入、內文平行載入）；沒有的話退回整包 search.json
 async function loadIndex() {
   try {
-    const manifest = await fetch('search-index/manifest.json', { cache: 'no-cache' }).then(r => {
-      if (!r.ok) throw new Error(r.status);
-      return r.json();
-    });
+    const manifest = await loadIndexScript('manifest.js', '?t=' + Date.now());
     const v = '?v=' + manifest.version;
-    const titles = await fetch('search-index/titles.json' + v).then(r => r.json());
+    const titles = await loadIndexScript('titles.js', v);
     searchData = titles.map(([title, url, path]) => ({ title, url, path, content: '' }));
     chunksTotal = manifest.chunks.length;
     onIndexProgress();
 
     await Promise.all(manifest.chunks.map(c =>
-      fetch('search-index/' + c.file + v)
-        .then(r => r.json())
+      loadIndexScript(c.file, v)
         .then(contents => {
           contents.forEach((text, i) => { searchData[c.start + i].content = text; });
           chunksLoaded++;
@@ -216,7 +232,9 @@ async function loadIndex() {
       chunksTotal = chunksLoaded = 1;
       onIndexProgress();
     } catch (err) {
-      document.getElementById('status').textContent = '索引載入失敗，請確認 search.json 存在。';
+      document.getElementById('status').textContent = IS_LOCAL
+        ? '索引載入失敗：請確認 search-index 資料夾存在（本地開啟需要它）。'
+        : '索引載入失敗，請確認 search.json 存在。';
     }
   }
 }
