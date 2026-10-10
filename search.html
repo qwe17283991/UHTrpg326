@@ -156,26 +156,84 @@ let searchData = [];
 let currentResults = [];
 let currentPage = 1;
 let lastKeywords = [];
+let lastQuery = '';
+let chunksTotal = 0;
+let chunksLoaded = 0;
+let indexFailed = false;
 const RESULTS_PER_PAGE = 20;
 
-fetch('search.json')
-  .then(r => r.json())
-  .then(data => {
-    searchData = data;
-    document.getElementById('status').textContent =
-      `索引載入完成，共 ${data.length} 個頁面可供搜尋。`;
-  })
-  .catch(err => {
-    document.getElementById('status').textContent = '索引載入失敗，請確認 search.json 存在。';
-  });
+function isIndexComplete() {
+  return chunksTotal > 0 && chunksLoaded === chunksTotal;
+}
+
+function loadingText() {
+  if (indexFailed) return '部分索引載入失敗，結果可能不完整，請重新整理再試。';
+  if (searchData.length === 0) return '正在載入搜尋索引...';
+  if (!isIndexComplete()) {
+    return `標題已可搜尋；內文索引載入中（${chunksLoaded}/${chunksTotal}），結果會陸續補上...`;
+  }
+  return `索引載入完成，共 ${searchData.length} 個頁面可供搜尋。`;
+}
+
+function onIndexProgress() {
+  if (lastQuery) {
+    const page = currentPage;
+    doSearch(true);
+    currentPage = Math.min(page, Math.max(1, Math.ceil(currentResults.length / RESULTS_PER_PAGE)));
+    renderResults();
+  } else {
+    document.getElementById('status').textContent = loadingText();
+  }
+}
+
+// 優先使用 search-index/ 分段索引（標題先載入、內文平行載入）；沒有的話退回整包 search.json
+async function loadIndex() {
+  try {
+    const manifest = await fetch('search-index/manifest.json', { cache: 'no-cache' }).then(r => {
+      if (!r.ok) throw new Error(r.status);
+      return r.json();
+    });
+    const v = '?v=' + manifest.version;
+    const titles = await fetch('search-index/titles.json' + v).then(r => r.json());
+    searchData = titles.map(([title, url, path]) => ({ title, url, path, content: '' }));
+    chunksTotal = manifest.chunks.length;
+    onIndexProgress();
+
+    await Promise.all(manifest.chunks.map(c =>
+      fetch('search-index/' + c.file + v)
+        .then(r => r.json())
+        .then(contents => {
+          contents.forEach((text, i) => { searchData[c.start + i].content = text; });
+          chunksLoaded++;
+          onIndexProgress();
+        })
+        .catch(() => { indexFailed = true; onIndexProgress(); })
+    ));
+  } catch (e) {
+    if (searchData.length > 0) return;
+    try {
+      searchData = await fetch('search.json').then(r => r.json());
+      chunksTotal = chunksLoaded = 1;
+      onIndexProgress();
+    } catch (err) {
+      document.getElementById('status').textContent = '索引載入失敗，請確認 search.json 存在。';
+    }
+  }
+}
+loadIndex();
 
 document.getElementById('searchInput').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') doSearch();
 });
 
-function doSearch() {
-  const query = document.getElementById('searchInput').value.trim();
-  if (!query || searchData.length === 0) return;
+function doSearch(isRerun) {
+  const query = isRerun ? lastQuery : document.getElementById('searchInput').value.trim();
+  if (!query) return;
+  lastQuery = query;
+  if (searchData.length === 0) {
+    document.getElementById('status').textContent = '索引還在載入中，載入後會自動顯示結果...';
+    return;
+  }
 
   const titleOnly = document.getElementById('titleOnly').checked;
   const exactMatch = document.getElementById('exactMatch').checked;
@@ -215,6 +273,7 @@ function doSearch() {
   }
 
   currentResults.sort((a, b) => b.score - a.score);
+  if (isRerun) return;
   currentPage = 1;
   renderResults();
 }
@@ -225,9 +284,13 @@ function renderResults() {
   const paginationDiv = document.getElementById('pagination');
   const keywords = lastKeywords;
 
+  const loadingNote = isIndexComplete() && !indexFailed ? '' : loadingText();
+
   if (currentResults.length === 0) {
-    statusDiv.textContent = '';
-    resultsDiv.innerHTML = '<div class="no-results">找不到相關結果，試試其他關鍵字？</div>';
+    statusDiv.textContent = loadingNote;
+    resultsDiv.innerHTML = loadingNote
+      ? '<div class="no-results">目前還沒有符合的結果，內文索引載入後會自動更新...</div>'
+      : '<div class="no-results">找不到相關結果，試試其他關鍵字？</div>';
     paginationDiv.innerHTML = '';
     return;
   }
@@ -237,7 +300,8 @@ function renderResults() {
   const end = Math.min(start + RESULTS_PER_PAGE, currentResults.length);
   const pageResults = currentResults.slice(start, end);
 
-  statusDiv.innerHTML = `<span class="result-count">找到 <strong>${currentResults.length}</strong> 個結果</span>`;
+  statusDiv.innerHTML = `<span class="result-count">找到 <strong>${currentResults.length}</strong> 個結果</span>`
+    + (loadingNote ? `<div class="result-count">${loadingNote}</div>` : '');
 
   let html = '';
   for (const item of pageResults) {
@@ -250,7 +314,7 @@ function renderResults() {
       <div class="result-item" onclick="openPage('${escapeHtml(item.url)}')">
         ${pathHtml}
         <div class="result-title">
-          <a href="${escapeHtml(item.url)}" target="contentFrame" onclick="event.stopPropagation()">
+          <a href="${escapeHtml(item.url)}" target="body" onclick="event.stopPropagation()">
             ${highlightText(escapeHtml(item.title), keywords)}
           </a>
         </div>
