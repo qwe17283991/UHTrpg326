@@ -117,48 +117,6 @@ A:visited  {text-decoration: underline; color: #0033CC}
 A:active {text-decoration: underline; color: #0033CC }
 A:hover {text-decoration: underline;color: #FF0000;}
 </style>
-<script type="text/javascript">
-function isMobile(){
-Agent = window.navigator.userAgent;
-if (Agent.indexOf("iPhone")>=1 || Agent.indexOf("iPad")>=1 || Agent.indexOf("iPod")>=1 || Agent.indexOf("Android")>=1){
-return true;
-}else{
-return false;	
-}
-
-}
-function d_onresize(){
-if (window.navigator.userAgent.indexOf("MSIE")>=1){
-document.getElementById('winchm_template_container').style.pixelWidth = document.body.offsetWidth - 3;
-document.getElementById('winchm_template_container').style.pixelHeight = document.body.offsetHeight - document.getElementById('winchm_template_top').offsetHeight - 4;
-}
-document.getElementById('winchm_template_container').style.top = document.getElementById('winchm_template_top').offsetHeight + 'px';
-}
-
-function d_onbeforeprint(){
-if (window.navigator.userAgent.indexOf("MSIE")>=1){
-document.getElementById('winchm_template_container').style.height = 'auto';
-}
-}
-
-function d_onafterprint(){
-d_onresize();
-}
-
-if(!isMobile()){
-
-window.onload = d_onresize;
-window.onresize = d_onresize;
-window.onbeforeprint = d_onbeforeprint;
-window.onafterprint = d_onafterprint;
-
-document.write("<style>\n");
-document.write("body {overflow: hidden;}\n");
-document.write("#winchm_template_container {position: absolute;overflow: auto;top : 0px;right: 0px;bottom: 0px;left: 0px;}\n");
-document.write("</style>\n");
-}
-
-</script>
 <style>
 @media print
 {
@@ -185,10 +143,6 @@ visibility:hidden;
 </head>
 
 <body>
-<div id=winchm_template_top>
-<div id=winchm_template_button><A title="Previous topic" href="$$unsavedpage6.htm" ><IMG id=winchm_template_prev border=0 alt="Previous topic" src="template2/btn_prev_n.gif" ></A><A title="Next topic" href="槍械類專長.htm" ><IMG id=winchm_template_next border=0 alt="Next topic" src="template2/btn_next_n.gif" ></A></div>
-<div id=winchm_template_navigation>Help &gt; 規則部分 &gt; <A href="$$unsavedpage1.htm" >建立人物卡來參與遊戲</A> &gt; <A href="$$unsavedpage4.htm" >專長概述</A> &gt; <A href="$$unsavedpage5.htm" >新建專案</A> &gt; <A href="$$unsavedpage6.htm" >戰鬥專長</A> &gt; </div>
-<div id=winchm_template_title>白刃類專長</div></div>
 <div id=winchm_template_container>
 <div id=winchm_template_content>
 <P class=MsoNormal 
@@ -1366,10 +1320,7 @@ style="FONT-SIZE: 12pt; FONT-FAMILY: 宋體; LINE-HEIGHT: 150%; mso-spacerun: 'y
 style="FONT-SIZE: 12pt; FONT-FAMILY: 宋體; LINE-HEIGHT: 150%; mso-spacerun: 'yes'; mso-font-kerning: 1.0000pt">===========================================================================================================</SPAN><SPAN 
 style="FONT-SIZE: 12pt; FONT-FAMILY: 宋體; LINE-HEIGHT: 150%; mso-spacerun: 'yes'; mso-font-kerning: 1.0000pt"><o:p></O:P></SPAN></P>
 <P class=MsoNormal style="TEXT-ALIGN: left; MARGIN: 0pt; LINE-HEIGHT: 150%"><SPAN 
-style="FONT-SIZE: 12pt; FONT-FAMILY: 宋體; LINE-HEIGHT: 150%; mso-spacerun: 'yes'; mso-font-kerning: 1.0000pt"><o:p></O:P></SPAN></P><!--EndFragment--></div>
-<div id=winchm_template_footer>Copyright ? 2019. All rights 
-reserved. (To change the copyright info, just edit it in 
-template.)</DIV></div>
+style="FONT-SIZE: 12pt; FONT-FAMILY: 宋體; LINE-HEIGHT: 150%; mso-spacerun: 'yes'; mso-font-kerning: 1.0000pt"><o:p></O:P></SPAN></P><!--EndFragment--></div></div>
 
 </body>
 </html>

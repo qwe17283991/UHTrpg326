@@ -1,0 +1,82 @@
+/* =====================================================================
+   內容頁統一樣式
+   由 index.html 在右側頁面載入時自動注入，不需要修改任何 .htm。
+   想調整全站內容頁的外觀，只要改這一個檔案。
+   ===================================================================== */
+
+:root {
+  --c-bg: #faf6f0;
+  --c-text: #4a3728;
+  --c-dim: #9a8575;
+  --c-accent: #c67b47;
+  --c-accent-dim: #a8623a;
+  --c-border: #ddd0c0;
+  --c-panel: #f0e8dc;
+  --c-red: #c0392b;     /* 原本的紅字 */
+  --c-blue: #2e6da4;    /* 原本的藍字 */
+}
+
+/* ----- 底色與字型 ----- */
+html, body,
+#winchm_template_container {
+  background: var(--c-bg) !important;
+  color: var(--c-text) !important;
+}
+body {
+  margin: 0 !important;
+  padding: 16px 24px 48px !important;
+  font-family: 'Noto Sans TC', 'Microsoft JhengHei', 'PingFang TC', sans-serif !important;
+  overflow-wrap: anywhere;   /* 很長的 ===== 分隔線不再撐出橫向捲軸 */
+}
+/* 蓋掉 Word 匯出時寫死在每個字上的 宋體 / Calibri / Times New Roman */
+body * { font-family: inherit !important; }
+
+/* ----- 文字顏色：黑色、近黑色 → 主題文字色 ----- */
+font[color="#000000"], font[color="black"],
+[style*="color: rgb(0,0,0)" i],
+[style*="color: rgb(12,12,12)" i],
+[style*="color: rgb(24,25,28)" i],
+[style*="color: rgb(51,51,51)" i],
+[style*="color: rgb(54,54,61)" i],
+[style*="color: #000000" i] {
+  color: var(--c-text) !important;
+}
+
+/* 有意義的強調色保留，只調成與底色搭配的色調 */
+[style*="color: rgb(255,0,0)" i], [style*="color: rgb(191,0,0)" i], font[color="#ff0000"] {
+  color: var(--c-red) !important;
+}
+[style*="color: rgb(0,0,255)" i], [style*="color: rgb(43,43,255)" i],
+[style*="color: rgb(0,43,255)" i], [style*="color: rgb(58,0,255)" i] {
+  color: var(--c-blue) !important;
+}
+
+/* ----- 白色底塊 → 透明 ----- */
+[style*="background: rgb(255,255,255)" i],
+[style*="background-color: rgb(255,255,255)" i],
+[style*="background-color: #ffffff" i],
+[bgcolor="#ffffff" i], [bgcolor="white" i] {
+  background: transparent !important;
+}
+
+/* ----- 連結 ----- */
+a:link, a:visited { color: var(--c-accent) !important; text-decoration: none !important; }
+a:hover, a:active { color: var(--c-accent-dim) !important; text-decoration: underline !important; }
+
+/* ----- 表格 ----- */
+table { border-color: var(--c-border) !important; }
+td, th { border-color: var(--c-border) !important; }
+
+/* ----- 分隔線（由 index.html 把 ===== 轉成 <hr class="divider">）----- */
+hr.divider {
+  border: 0;
+  border-top: 3px double var(--c-border);
+  height: 0;
+  margin: 14px 0;
+}
+
+/* ----- 選取、捲軸 ----- */
+::selection { background: #c67b4740; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--c-border); border-radius: 5px; }
+::-webkit-scrollbar-track { background: transparent; }

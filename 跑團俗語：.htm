@@ -117,48 +117,6 @@ A:visited  {text-decoration: underline; color: #0033CC}
 A:active {text-decoration: underline; color: #0033CC }
 A:hover {text-decoration: underline;color: #FF0000;}
 </style>
-<script type="text/javascript">
-function isMobile(){
-Agent = window.navigator.userAgent;
-if (Agent.indexOf("iPhone")>=1 || Agent.indexOf("iPad")>=1 || Agent.indexOf("iPod")>=1 || Agent.indexOf("Android")>=1){
-return true;
-}else{
-return false;	
-}
-
-}
-function d_onresize(){
-if (window.navigator.userAgent.indexOf("MSIE")>=1){
-document.getElementById('winchm_template_container').style.pixelWidth = document.body.offsetWidth - 3;
-document.getElementById('winchm_template_container').style.pixelHeight = document.body.offsetHeight - document.getElementById('winchm_template_top').offsetHeight - 4;
-}
-document.getElementById('winchm_template_container').style.top = document.getElementById('winchm_template_top').offsetHeight + 'px';
-}
-
-function d_onbeforeprint(){
-if (window.navigator.userAgent.indexOf("MSIE")>=1){
-document.getElementById('winchm_template_container').style.height = 'auto';
-}
-}
-
-function d_onafterprint(){
-d_onresize();
-}
-
-if(!isMobile()){
-
-window.onload = d_onresize;
-window.onresize = d_onresize;
-window.onbeforeprint = d_onbeforeprint;
-window.onafterprint = d_onafterprint;
-
-document.write("<style>\n");
-document.write("body {overflow: hidden;}\n");
-document.write("#winchm_template_container {position: absolute;overflow: auto;top : 0px;right: 0px;bottom: 0px;left: 0px;}\n");
-document.write("</style>\n");
-}
-
-</script>
 <style>
 @media print
 {
@@ -186,12 +144,6 @@ visibility:hidden;
 
 <body>
 
-<div id="winchm_template_top">
-	<div id="winchm_template_button"><A title="Previous topic" href="關鍵詞一覽.htm" ><IMG id=winchm_template_prev border=0 alt ="Previous topic" src="template2/btn_prev_n.gif" ></A><A title="Next topic" href="$$unsavedpage8.htm" ><IMG id=winchm_template_next border=0 alt ="Next topic" src="template2/btn_next_n.gif" ></A></div>
-	<div id="winchm_template_navigation">Help &gt; 
-規則部分 &gt; <A href="$$unsavedpage7.htm">名詞查詢和解釋</A> &gt; </div>
-	<div id="winchm_template_title">跑團俗語</div>
-</div>
 <div id="winchm_template_container">
 	<div id="winchm_template_content">
 <P class=MsoNormal style="MARGIN: 0pt; LINE-HEIGHT: 150%"><B><SPAN 
@@ -306,9 +258,7 @@ style="FONT-SIZE: 12pt; FONT-FAMILY: 宋體; FONT-WEIGHT: bold; LINE-HEIGHT: 150
 style="FONT-SIZE: 12pt; FONT-FAMILY: 宋體; LINE-HEIGHT: 150%; mso-spacerun: 'yes'; mso-font-kerning: 1.0000pt"><FONT face=宋體>在規則書沒有覆蓋或者詳細描述的情況下，部分事件與行動的結果需要</FONT>ST根據場景做出判斷，這個情況稱作“心判”。心判包括但不限於“這個移動算不算逃避戰鬥？”“這個行為算不算正義？”等。</SPAN><SPAN 
 style="FONT-SIZE: 12pt; FONT-FAMILY: 宋體; LINE-HEIGHT: 150%; mso-spacerun: 'yes'; mso-font-kerning: 1.0000pt"><o:p></o:p></SPAN></P>
 <P class=MsoNormal style="MARGIN: 0pt; LINE-HEIGHT: 150%"><SPAN 
-style="FONT-SIZE: 12pt; FONT-FAMILY: 宋體; LINE-HEIGHT: 150%; mso-spacerun: 'yes'; mso-font-kerning: 1.0000pt">===========================================================================================================</SPAN></P><!--EndFragment--></div>	
-	<div id="winchm_template_footer">Copyright ? 2019. All rights 
-reserved. (To change the copyright info, just edit it in template.)</div>
+style="FONT-SIZE: 12pt; FONT-FAMILY: 宋體; LINE-HEIGHT: 150%; mso-spacerun: 'yes'; mso-font-kerning: 1.0000pt">===========================================================================================================</SPAN></P><!--EndFragment--></div>
 </div>
 
 </body>

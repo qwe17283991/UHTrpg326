@@ -117,48 +117,6 @@ A:visited  {text-decoration: underline; color: #0033CC}
 A:active {text-decoration: underline; color: #0033CC }
 A:hover {text-decoration: underline;color: #FF0000;}
 </style>
-<script type="text/javascript">
-function isMobile(){
-Agent = window.navigator.userAgent;
-if (Agent.indexOf("iPhone")>=1 || Agent.indexOf("iPad")>=1 || Agent.indexOf("iPod")>=1 || Agent.indexOf("Android")>=1){
-return true;
-}else{
-return false;	
-}
-
-}
-function d_onresize(){
-if (window.navigator.userAgent.indexOf("MSIE")>=1){
-document.getElementById('winchm_template_container').style.pixelWidth = document.body.offsetWidth - 3;
-document.getElementById('winchm_template_container').style.pixelHeight = document.body.offsetHeight - document.getElementById('winchm_template_top').offsetHeight - 4;
-}
-document.getElementById('winchm_template_container').style.top = document.getElementById('winchm_template_top').offsetHeight + 'px';
-}
-
-function d_onbeforeprint(){
-if (window.navigator.userAgent.indexOf("MSIE")>=1){
-document.getElementById('winchm_template_container').style.height = 'auto';
-}
-}
-
-function d_onafterprint(){
-d_onresize();
-}
-
-if(!isMobile()){
-
-window.onload = d_onresize;
-window.onresize = d_onresize;
-window.onbeforeprint = d_onbeforeprint;
-window.onafterprint = d_onafterprint;
-
-document.write("<style>\n");
-document.write("body {overflow: hidden;}\n");
-document.write("#winchm_template_container {position: absolute;overflow: auto;top : 0px;right: 0px;bottom: 0px;left: 0px;}\n");
-document.write("</style>\n");
-}
-
-</script>
 <style>
 @media print
 {
@@ -186,12 +144,6 @@ visibility:hidden;
 
 <body>
 
-<div id="winchm_template_top">
-	<div id="winchm_template_button"><A href="$$unsavedpage9.htm" title="Previous topic"><img id="winchm_template_prev" alt="Previous topic" src="template2/btn_prev_n.gif" border="0"></a><A href="頭錐.htm" title="Next topic"><img id="winchm_template_next" alt="Next topic" src="template2/btn_next_n.gif" border="0"></a></div>
-	<div id="winchm_template_navigation">Help &gt; 
-規則部分 &gt; <A href="$$unsavedpage9.htm">玩梗</A> &gt; </div>
-	<div id="winchm_template_title">羅馬</div>
-</div>
 <div id="winchm_template_container">
 	<div id="winchm_template_content">
 <P class=MsoNormal style="MARGIN: 0pt; LINE-HEIGHT: 150%"><SPAN 
@@ -261,9 +213,7 @@ style="FONT-SIZE: 12pt; FONT-FAMILY: 宋體; LINE-HEIGHT: 150%; mso-spacerun: 'y
 style="FONT-SIZE: 12pt; FONT-FAMILY: 宋體; LINE-HEIGHT: 150%; mso-spacerun: 'yes'; mso-font-kerning: 1.0000pt"><FONT face=宋體>貳叄貳釋出前。</FONT></SPAN><SPAN 
 style="FONT-SIZE: 12pt; FONT-FAMILY: 宋體; LINE-HEIGHT: 150%; mso-spacerun: 'yes'; mso-font-kerning: 1.0000pt"><o:p></o:p></SPAN></P>
 <P class=MsoNormal style="MARGIN: 0pt; LINE-HEIGHT: 150%"><SPAN 
-style="FONT-SIZE: 12pt; FONT-FAMILY: 宋體; LINE-HEIGHT: 150%; mso-spacerun: 'yes'; mso-font-kerning: 1.0000pt"><o:p>&nbsp;</o:p></SPAN></P><!--EndFragment--></div>	
-	<div id="winchm_template_footer">Copyright &copy; 2019. All rights 
-reserved. (To change the copyright info, just edit it in template.)</div>
+style="FONT-SIZE: 12pt; FONT-FAMILY: 宋體; LINE-HEIGHT: 150%; mso-spacerun: 'yes'; mso-font-kerning: 1.0000pt"><o:p>&nbsp;</o:p></SPAN></P><!--EndFragment--></div>
 </div>
 
 </body>

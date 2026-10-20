@@ -102,7 +102,7 @@
   .drag-overlay.active { display: block; }
 
   /* ===== 右側內容 ===== */
-  .content { flex: 1; overflow: hidden; background: white; position: relative; }
+  .content { flex: 1; overflow: hidden; background: var(--bg-dark); position: relative; }
   .content iframe { width: 100%; height: 100%; border: none; display: none; }
 
   .placeholder {
@@ -223,7 +223,56 @@ function showIndex() {
 }
 
 // ===== 右側載入 =====
+// 內容頁統一樣式：把 content.css 注入右側頁面（不用改每個 .htm）
+function injectContentTheme() {
+  try {
+    const doc = bodyFrame.contentDocument;
+    if (!doc || !doc.documentElement || doc.getElementById('site-content-theme')) return;
+    const link = doc.createElement('link');
+    link.id = 'site-content-theme';
+    link.rel = 'stylesheet';
+    link.href = new URL('content.css', location.href).href;
+    (doc.head || doc.documentElement).appendChild(link);
+  } catch(e) {}
+}
+
+// 把用一長串 ===== 打出來的分隔線換成會隨螢幕寬度伸縮的 <hr class="divider">
+const DIVIDER_RE = /^[=＝\s ]*$/;
+function isDividerText(s) { return s.indexOf('=====') >= 0 || s.indexOf('＝＝＝＝＝') >= 0; }
+function convertDividers() {
+  try {
+    const doc = bodyFrame.contentDocument;
+    if (!doc || !doc.body || doc.readyState === 'loading' || doc.body.dataset.dividers) return;
+    doc.body.dataset.dividers = '1';
+    const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT);
+    const hits = [];
+    for (let t = walker.nextNode(); t; t = walker.nextNode()) {
+      if (isDividerText(t.nodeValue) && DIVIDER_RE.test(t.nodeValue)) hits.push(t);
+    }
+    const done = new Set();
+    hits.forEach(t => {
+      if (!t.parentNode) return;
+      const block = t.parentNode.closest('p, div, li, td, h1, h2, h3, h4, h5, h6');
+      const hr = doc.createElement('hr');
+      hr.className = 'divider';
+      if (block && block !== doc.body && !done.has(block) && DIVIDER_RE.test(block.textContent)) {
+        // 整段都是分隔線：整段換掉
+        done.add(block);
+        block.replaceWith(hr);
+      } else if (!done.has(block)) {
+        // 分隔線和其他文字在同一段（用 <br> 分行）：只換掉那串 =
+        t.replaceWith(hr);
+      }
+    });
+  } catch(e) {}
+}
+
+// 頁面一開始解析就注入，避免大頁面等 onload 時先閃一下白底
+setInterval(() => { injectContentTheme(); convertDividers(); }, 100);
+
 function onBodyLoad() {
+  injectContentTheme();
+  convertDividers();
   try {
     const loc = bodyFrame.contentWindow.location.href;
     if (loc && loc !== 'about:blank') {
