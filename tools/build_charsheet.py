@@ -72,6 +72,7 @@ BG_FIX = {
 }
 # Excel 2016 以後新增的函式，檔案裡必須寫成 _xlfn.XXX，否則 Excel 2019 會說檔案有問題並刪掉公式。
 # （Google 試算表匯出時沒加前綴；Google 試算表讀 _xlfn. 前綴也沒問題。）
+SIZE_LOOKUP = re.compile(r'LOOKUP\(BM32,\{((?:&quot;[^&]*&quot;,?)+)\},\{([^}]*)\}\)')
 NEW_FUNCS = ['IFS', 'MAXIFS', 'MINIFS', 'SWITCH', 'TEXTJOIN', 'CONCAT', 'XLOOKUP', 'IFNA']
 
 
@@ -87,6 +88,21 @@ def fix_formulas(xml):
         xml, k = re.subn(r'(<c r="%s"[^>]*>)<f[^>]*?(?:/>|>[^<]*</f>)' % ref, lambda m: m.group(1) + '<f>' + f + '</f>', xml)
         n += k
     print(f'  公式修正：檢定表「打遊戲、使用電腦」的附加查到空白的技能欄 … {"已修正" if n == 4 else f"只改到 {n} 格，請檢查"}')
+
+    # 體型查表：LOOKUP 要求清單已排序（二分搜尋），中文排序規則一變就會 #N/A。
+    # 改成 INDEX/MATCH 完全比對，不管試算表的語系、排序規則都找得到。
+    xml, k = SIZE_LOOKUP.subn(r'INDEX({\2},MATCH(BM32,{\1},0))', xml)
+    print(f'  相容性：{k} 個體型查表公式改成完全比對（避免匯入後 #N/A）')
+
+    # 陣列常數 {…} 裡不能有算式（Excel 規定只能放數值），把 1/4 這類改成小數
+    frac = 0
+    def fix_const(m):
+        nonlocal frac
+        body, n = re.subn(r'(?<![\w.])(\d+)/(\d+)(?![\w.])', lambda x: repr(int(x.group(1)) / int(x.group(2))), m.group(0))
+        frac += n
+        return body
+    xml = re.sub(r'\{[0-9.,/\-;]+\}', fix_const, xml)
+    print(f'  相容性：陣列常數裡 {frac} 個分數改成小數（Excel 需要）')
 
     # 新函式加上 _xlfn. 前綴（只改公式內容，避開已經有前綴的）
     count = 0

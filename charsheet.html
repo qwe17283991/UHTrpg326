@@ -1153,11 +1153,19 @@ function parseSheet(xml, sst) {
 // （Google 試算表匯出的角卡沒有這個前綴；Google 試算表讀有前綴的也沒問題）
 const xlfn = f => String(f).replace(/(^|[^\w.])(IFS|MAXIFS|MINIFS|SWITCH|TEXTJOIN|CONCAT|XLOOKUP|IFNA)\(/gi,
   (m, pre, fn) => pre + '_xlfn.' + fn.toUpperCase() + '(');
+// 舊版空白卡公式的相容性修正（與 tools/build_charsheet.py 相同）：
+// 1. 體型查表 LOOKUP（需要排序，匯入後可能 #N/A）改成 INDEX/MATCH 完全比對
+// 2. 陣列常數裡的分數（1/4）改成小數，Excel 不接受算式
+function modernize(f) {
+  return String(f)
+    .replace(/LOOKUP\(BM32,\{((?:"[^"]*",?)+)\},\{([^}]*)\}\)/g, 'INDEX({$2},MATCH(BM32,{$1},0))')
+    .replace(/\{[0-9.,/\-;]+\}/g, c => c.replace(/(^|[^\w.])(\d+)\/(\d+)(?![\w.])/g, (m, pre, a, b) => pre + String(a / b)));
+}
 // 產生一個儲存格的 XML。spec：'' / 數字 / 字串 / { v, t, f, fa }
 function cellXml(ref, style, spec) {
   if (spec && typeof spec === 'object') {
     const { v, fa } = spec;
-    const f = spec.f == null || spec.f === '' ? spec.f : xlfn(spec.f);
+    const f = spec.f == null || spec.f === '' ? spec.f : xlfn(modernize(spec.f));
     if (f != null && f !== '') {
       const tv = typeof v === 'boolean' ? ' t="b"' : (v !== '' && !isNum(v) ? ' t="str"' : '');
       const vv = v === '' || v == null ? '' : `<v>${typeof v === 'boolean' ? (v ? 1 : 0) : xmlEsc(v)}</v>`;
@@ -1259,7 +1267,7 @@ const LEGACY_F = {
 function sameCell(a, b, ref) {
   if (a.shared) return true;                         // Excel 共用公式：視為沒改
   if (a.f != null && LEGACY_F[ref] && normF(a.f) === normF(LEGACY_F[ref])) return true;
-  if (a.f != null || b.f != null) return normF(a.f) === normF(b.f);
+  if (a.f != null || b.f != null) return normF(a.f == null ? a.f : modernize(a.f)) === normF(b.f);
   if (isNum(a.v) && isNum(b.v)) return +a.v === +b.v;
   return String(a.v) === String(b.v);
 }
