@@ -25,14 +25,14 @@ from bs4 import BeautifulSoup
 SITE_DIR = '.'
 MAX_CONTENT_LENGTH = 3000
 SKIP_FILES = ['___', 'index', 'search', '$$unsavedpage']
-LEFT_FILE = '___left.htm'
+LEFT_FILE = '___left_data.js'  # 左側目錄資料（___left.htm 會載入它）
 
 # ============================================================
-# 從 ___left.htm 建立目錄路徑
+# 從 ___left_data.js 建立目錄路徑
 # ============================================================
 
 def build_breadcrumbs(site_dir):
-    """從 ___left.htm 解析 d.add() 呼叫，建立每個檔案的完整目錄路徑"""
+    """從 ___left_data.js 解析 d.add() 呼叫，建立每個檔案的完整目錄路徑"""
     left_path = os.path.join(site_dir, LEFT_FILE)
     if not os.path.exists(left_path):
         print(f"  找不到 {LEFT_FILE}，跳過目錄路徑建立")
