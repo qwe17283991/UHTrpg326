@@ -72,6 +72,22 @@ BG_FIX = {
 }
 # Excel 2016 以後新增的函式，檔案裡必須寫成 _xlfn.XXX，否則 Excel 2019 會說檔案有問題並刪掉公式。
 # （Google 試算表匯出時沒加前綴；Google 試算表讀 _xlfn. 前綴也沒問題。）
+# 原本是 Google 試算表核取方塊的格子（本能覺醒開鎖、防禦預設四項、召喚物兩項、計算器兩項）
+BOOL_CELLS = ['BP54', 'CU58', 'CY58', 'DC58', 'DG58', 'EH62', 'EK62', 'CK157', 'CV157']
+
+
+def bool_refs(f):
+    """公式裡引用核取方塊格的地方改成 (X&""="TRUE")；已經改過的不重複改"""
+    for ref in BOOL_CELLS:
+        col, row = re.match(r'([A-Z]+)(\d+)', ref).groups()
+        f = re.sub(r'(?<![A-Z$])(\$?%s\$?%s)(?!\d|&"")' % (col, row), r'(\1&""="TRUE")', f)
+    return re.sub(r'(\(\$?[A-Z]+\$?\d+&""="TRUE"\))=TRUE', r'\1', f)
+
+
+def xml_escape(s):
+    return s.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
+
+
 SIZE_LOOKUP = re.compile(r'LOOKUP\(BM32,\{((?:&quot;[^&]*&quot;,?)+)\},\{([^}]*)\}\)')
 NEW_FUNCS = ['IFS', 'MAXIFS', 'MINIFS', 'SWITCH', 'TEXTJOIN', 'CONCAT', 'XLOOKUP', 'IFNA']
 
@@ -103,6 +119,17 @@ def fix_formulas(xml):
         return body
     xml = re.sub(r'\{[0-9.,/\-;]+\}', fix_const, xml)
     print(f'  相容性：陣列常數裡 {frac} 個分數改成小數（Excel 需要）')
+
+    # 核取方塊格：.xlsx 沒有核取方塊，改成 TRUE/FALSE 下拉選單。
+    # 下拉選單選到的可能是文字 "TRUE"，所以公式一律用 (X&""="TRUE") 判斷，真假值、文字都通用。
+    def bool_fix(m):
+        return m.group(1) + xml_escape(bool_refs(unescape(m.group(2)))) + m.group(3)
+    xml = re.sub(r'(<f[^>]*>)([^<]*)(</f>)', bool_fix, xml)
+    dv = (f'<dataValidation type="list" allowBlank="1" showErrorMessage="1" sqref="{" ".join(BOOL_CELLS)}">'
+          '<formula1>&quot;TRUE,FALSE&quot;</formula1></dataValidation>')
+    xml, k = re.subn(r'<dataValidations([^>]*)>', lambda m: '<dataValidations' + re.sub(
+        r'count="(\d+)"', lambda c: f'count="{int(c.group(1)) + 1}"', m.group(1)) + '>' + dv, xml, count=1)
+    print(f'  相容性：{len(BOOL_CELLS)} 個核取方塊格改成 TRUE/FALSE 下拉選單' + ('' if k else '（找不到下拉選單區段，略過）'))
 
     # 新函式加上 _xlfn. 前綴（只改公式內容，避開已經有前綴的）
     count = 0

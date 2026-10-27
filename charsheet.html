@@ -1167,10 +1167,17 @@ const xlfn = f => String(f).replace(/(^|[^\w.])(IFS|MAXIFS|MINIFS|SWITCH|TEXTJOI
 // 舊版空白卡公式的相容性修正（與 tools/build_charsheet.py 相同）：
 // 1. 體型查表 LOOKUP（需要排序，匯入後可能 #N/A）改成 INDEX/MATCH 完全比對
 // 2. 陣列常數裡的分數（1/4）改成小數，Excel 不接受算式
+// 3. 核取方塊格（樣板改成 TRUE/FALSE 下拉選單）的判斷改成 (X&""="TRUE")，真假值、文字都通用
+const BOOL_CELLS = ['BP54', 'CU58', 'CY58', 'DC58', 'DG58', 'EH62', 'EK62', 'CK157', 'CV157'];
 function modernize(f) {
-  return String(f)
+  let s = String(f)
     .replace(/LOOKUP\(BM32,\{((?:"[^"]*",?)+)\},\{([^}]*)\}\)/g, 'INDEX({$2},MATCH(BM32,{$1},0))')
     .replace(/\{[0-9.,/\-;]+\}/g, c => c.replace(/(^|[^\w.])(\d+)\/(\d+)(?![\w.])/g, (m, pre, a, b) => pre + String(a / b)));
+  for (const ref of BOOL_CELLS) {
+    const [, col, row] = ref.match(/([A-Z]+)(\d+)/);
+    s = s.replace(new RegExp(`(?<![A-Z$])(\\$?${col}\\$?${row})(?!\\d|&"")`, 'g'), '($1&""="TRUE")');
+  }
+  return s.replace(/(\(\$?[A-Z]+\$?\d+&""="TRUE"\))=TRUE/g, '$1');
 }
 // 產生一個儲存格的 XML。spec：'' / 數字 / 字串 / { v, t, f, fa }
 function cellXml(ref, style, spec) {
