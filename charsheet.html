@@ -1149,10 +1149,15 @@ function parseSheet(xml, sst) {
   return cells;
 }
 
+// Excel 2016 以後新增的函式在檔案裡要寫成 _xlfn.XXX，否則 Excel 2019 會說檔案有問題並刪掉公式
+// （Google 試算表匯出的角卡沒有這個前綴；Google 試算表讀有前綴的也沒問題）
+const xlfn = f => String(f).replace(/(^|[^\w.])(IFS|MAXIFS|MINIFS|SWITCH|TEXTJOIN|CONCAT|XLOOKUP|IFNA)\(/gi,
+  (m, pre, fn) => pre + '_xlfn.' + fn.toUpperCase() + '(');
 // 產生一個儲存格的 XML。spec：'' / 數字 / 字串 / { v, t, f, fa }
 function cellXml(ref, style, spec) {
   if (spec && typeof spec === 'object') {
-    const { v, f, fa } = spec;
+    const { v, fa } = spec;
+    const f = spec.f == null || spec.f === '' ? spec.f : xlfn(spec.f);
     if (f != null && f !== '') {
       const tv = typeof v === 'boolean' ? ' t="b"' : (v !== '' && !isNum(v) ? ' t="str"' : '');
       const vv = v === '' || v == null ? '' : `<v>${typeof v === 'boolean' ? (v ? 1 : 0) : xmlEsc(v)}</v>`;
@@ -1244,7 +1249,7 @@ async function templateCells() {
   TPL_CELLS = parseSheet(await zip.file(await sheetPath(zip, '空白卡')).async('string'), await readSST(zip));
   return TPL_CELLS;
 }
-const normF = f => String(f || '').replace(/\s+/g, '').toLowerCase();
+const normF = f => String(f || '').replace(/\s+/g, '').replace(/_xlfn\./gi, '').toLowerCase();
 // 舊版空白卡有錯的公式（樣板已修正）：匯入舊角卡時不當成玩家自訂，導出時改用修正後的公式
 const LEGACY_F = {
   BS2: 'SUM(BS5:BT24)',

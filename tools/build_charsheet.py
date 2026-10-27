@@ -61,21 +61,42 @@ FORMULA_FIXES = [
      '<f>SUM(BS5:BT24)</f>', '<f>SUM(BS5:BT26)</f>'),
     ('天賦剩餘點數漏扣第 5 格天賦（CO13）',
      'SUM($CO$5:$CP$12)</f>', 'SUM($CO$5:$CP$14)</f>'),
-    ('檢定表「打遊戲、使用電腦」的附加查到空白的技能欄（應查 AF37 電腦）',
-     re.compile(r'(<c r="BG38"[^>]*>)<f t="shared" si="\d+"/>'),
-     r'\1<f>iferror(VLOOKUP(AU38,$CZ$155:$DI$186,5,false)+vlookup(AF37,$CZ$155:$DI$186,5,false),&quot;X&quot;)</f>'),
 ]
+# 檢定表 BG36~BG39 是同一組「共用公式」，BG38 照公式位移會查到空白的 AF38（應查 AF37 電腦）。
+# 拆成各自獨立的公式（直接在共用範圍中間改一格，Excel 會判定檔案損毀）。
+BG_FIX = {
+    'BG36': 'iferror(VLOOKUP(AU36,$CZ$155:$DI$186,5,false)+vlookup(AF36,$CZ$155:$DI$186,5,false),"X")',
+    'BG37': 'iferror(VLOOKUP(AU37,$CZ$155:$DI$186,5,false)+vlookup(AF37,$CZ$155:$DI$186,5,false),"X")',
+    'BG38': 'iferror(VLOOKUP(AU38,$CZ$155:$DI$186,5,false)+vlookup(AF37,$CZ$155:$DI$186,5,false),"X")',
+    'BG39': 'iferror(VLOOKUP(AU39,$CZ$155:$DI$186,5,false)+vlookup(AF39,$CZ$155:$DI$186,5,false),"X")',
+}
+# Excel 2016 以後新增的函式，檔案裡必須寫成 _xlfn.XXX，否則 Excel 2019 會說檔案有問題並刪掉公式。
+# （Google 試算表匯出時沒加前綴；Google 試算表讀 _xlfn. 前綴也沒問題。）
+NEW_FUNCS = ['IFS', 'MAXIFS', 'MINIFS', 'SWITCH', 'TEXTJOIN', 'CONCAT', 'XLOOKUP', 'IFNA']
 
 
 def fix_formulas(xml):
     for desc, old, new in FORMULA_FIXES:
-        if isinstance(old, str):
-            done = old in xml
-            xml = xml.replace(old, new)
-        else:
-            xml, n = old.subn(new, xml)
-            done = n > 0
+        done = old in xml
+        xml = xml.replace(old, new)
         print(f'  公式修正：{desc} … {"已修正" if done else "找不到原本的寫法，略過"}')
+
+    n = 0
+    for ref, f in BG_FIX.items():
+        f = f.replace('"', '&quot;')
+        xml, k = re.subn(r'(<c r="%s"[^>]*>)<f[^>]*?(?:/>|>[^<]*</f>)' % ref, lambda m: m.group(1) + '<f>' + f + '</f>', xml)
+        n += k
+    print(f'  公式修正：檢定表「打遊戲、使用電腦」的附加查到空白的技能欄 … {"已修正" if n == 4 else f"只改到 {n} 格，請檢查"}')
+
+    # 新函式加上 _xlfn. 前綴（只改公式內容，避開已經有前綴的）
+    count = 0
+    def add_prefix(m):
+        nonlocal count
+        body, k = re.subn(r'(?<![\w.])(%s)\(' % '|'.join(NEW_FUNCS), lambda x: '_xlfn.' + x.group(1).upper() + '(', m.group(2), flags=re.I)
+        count += k
+        return m.group(1) + body + m.group(3)
+    xml = re.sub(r'(<f[^>]*>)([^<]*)(</f>)', add_prefix, xml)
+    print(f'  相容性：{count} 處新函式加上 _xlfn. 前綴（Excel 2019 需要）')
     return xml
 
 
