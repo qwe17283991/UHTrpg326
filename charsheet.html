@@ -167,6 +167,9 @@
   .pk-foot .chosen { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   mark { background: var(--mark); color: inherit; border-radius: 2px; }
 
+  .size-note { font-size: 12px; color: var(--text-dim); }
+  .size-note:empty { display: none; }
+
   /* 建卡模式 */
   body.create .adv { display: none !important; }
   body:not(.create) .create-only { display: none !important; }
@@ -348,6 +351,9 @@ const CHECKS = [
 ];
 
 const SIZES = ['超微型', '微型', '小型', '中型', '大型', '超大型', '巨型', '超巨型'];
+// 規則「一步一步的建立你的角色」：依體積決定體型（0 忽略不計、1、2-3、4-6、7-12、13-21、22-33、34 以上）
+const SIZE_BY_VOLUME = [[1, '超微型'], [2, '微型'], [4, '小型'], [7, '中型'], [13, '大型'], [22, '超大型'], [34, '巨型']];
+const sizeFromVolume = v => (SIZE_BY_VOLUME.find(([lim]) => v < lim) || [0, '超巨型'])[1];
 const SIZE_SPEED = { 超大型: 8, 超巨型: 16, 超微型: 0, 大型: 5, 巨型: 12, 微型: 1, 小型: 2, 中型: 5 };
 const SIZE_HP = { 超大型: 17, 超巨型: 37, 超微型: 0, 大型: 10, 巨型: 26, 微型: 1, 小型: 2, 中型: 5 };
 const SIZE_REACH = { 超大型: 4, 超巨型: 8, 超微型: 0, 大型: 2, 巨型: 6, 微型: 0, 小型: 2, 中型: 2 };
@@ -371,7 +377,7 @@ const TITLE_COLS = ['AZ', 'BG', 'BN', 'BU', 'CB', 'CI', 'CP', 'CW', 'DD'];
 const TRAIT_ROWS = [84, 86, 88, 90, 92, 94, 96, 98, 100, 102, 104, 106];
 
 // 預設值（與空白卡相同）
-const DEFAULTS = { BP31: '5', BM32: '中型', D43: '攝影' };
+const DEFAULTS = { BP31: '5', D43: '攝影' };   // 體型（BM32）預設空白＝依體積自動判斷
 // 樣板上的提示文字：空白時照樣寫回
 const PLACEHOLDER = { B7: 'cm', G7: 'kg' };
 ATTRS.forEach(a => { DEFAULTS['F' + a.r] = '2'; });
@@ -456,9 +462,12 @@ function compute() {
   else C.B27 = ['warn', '請在建卡欄位分配您的技能(6+5+4/5)，單技能上限為5，總和為20。剩餘點數：' + (20 - gSum - gBonus)];
 
   // 衍生屬性：BP 基礎、BS 傳屬、BM 總值
-  const size = raw('BM32');
   const bonus = r => BONUS.reduce((t, [c]) => t + n(c + r), 0);
-  C.BP31 = n('BP31'); C.BS31 = 0;
+  C.BP31 = n('BP31'); C.BS31 = 0; C.BM31 = C.BP31 + bonus(31);
+  // 體型：沒有手動指定就依體積總值判斷
+  const autoSize = sizeFromVolume(C.BM31), size = raw('BM32') || autoSize;
+  C.size = size;
+  C.sizeAuto = raw('BM32') ? (raw('BM32') === autoSize ? '' : `手動指定（依體積應為${autoSize}）`) : `依體積 ${C.BM31} → ${autoSize}`;
   C.BP33 = V('力量') + V('敏捷') + (SIZE_SPEED[size] ?? 0); C.BS33 = 0;
   C.BM33 = C.BP33 + bonus(33);
   C.BP34 = C.BM33; C.BS34 = 0;
@@ -574,10 +583,12 @@ function render() {
 
   <section class="card" id="s-derived">
     <h2>衍生屬性 <small>基礎與傳屬自動計算，加值欄填各來源的加成</small></h2>
-    <div class="grid" style="max-width:340px;margin:6px 0 12px">
-      <label class="f">體型<select data-k="BM32">${SIZES.map(v => `<option>${v}</option>`).join('')}</select></label>
+    <div class="grid" style="max-width:460px;margin:6px 0 4px">
       <label class="f">體積（基礎）${inp('BP31')}</label>
+      <label class="f">體型<select data-k="BM32"><option value="">自動（依體積）</option>${SIZES.map(v => `<option>${v}</option>`).join('')}</select>
+        <span class="size-note" data-c="sizeAuto"></span></label>
     </div>
+    <p class="hint">體型依「體積」總值自動判斷（規則：1 微型、2-3 小型、4-6 中型、7-12 大型、13-21 超大型、22-33 巨型、34 以上超巨型）；有特殊規則時才需要手動指定。</p>
     <div class="tw"><table class="t">
       <thead><tr><th class="l">項目</th><th>數值</th><th class="col-sep">基礎</th><th>傳屬</th>${BONUS.map(([, l]) => `<th class="adv">${l}</th>`).join('')}</tr></thead>
       <tbody>${DERIVED.map(d => `<tr><td class="nm">${d.n}</td><td class="sum">${out('BM' + d.r)}${d.u ? ' ' + d.u : ''}</td>
@@ -1211,6 +1222,8 @@ function insertCell(xml, ref, cell) {
 const NAME_CELLS = new Set([...FLAW_ROWS.map(r => 'BU' + r), ...TALENT_ROWS.map(r => 'CQ' + r)]);
 const NOTE_CELLS = new Set([...FLAW_ROWS.map(r => 'BU' + (r + 1)), ...TALENT_ROWS.map(r => 'CQ' + (r + 1))]);
 function exportValue(k, type) {
+  // 體型：寫入實際使用的體型（自動判斷或手動指定），試算表公式才會用到正確的值
+  if (k === 'BM32') return C.size;
   const full = String(raw(k)), v = full.trim();
   // 缺陷／天賦名稱空白時用「 -」，讓試算表的 VLOOKUP 對得到
   if (NAME_CELLS.has(k)) return v === '' || v === '-' ? ' -' : full;
@@ -1235,6 +1248,7 @@ async function exportXlsx() {
   try {
     const zip = await templateZip();
     const path = await sheetPath(zip, '空白卡');
+    compute();
     const specs = new Map();
     for (const [k, type] of Object.entries(FIELDS)) specs.set(k, exportValue(k, type));
     // 匯入時保留下來、網頁還不能編輯的格子
@@ -1316,6 +1330,8 @@ async function importXlsx(file) {
   // 2. 其他和空白卡不同的格子：原樣保留
   const kept = [], overridden = [];
   S = N; compute();
+  // 原角卡的體型跟體積相符就改成自動判斷，不符才保留為手動指定
+  if (N.BM32 && N.BM32 === sizeFromVolume(C.BM31)) { N.BM32 = ''; compute(); }
   const computed = new Set(Object.keys(C).filter(k => /^[A-Z]+\d+$/.test(k)));
   for (const ref of new Set([...cells.keys(), ...tpl.keys()])) {
     if (ref in FIELDS) continue;
