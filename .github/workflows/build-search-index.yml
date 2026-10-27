@@ -40,9 +40,9 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add search.json search-index charsheet/rules.js
+          git add search.json search-index charsheet/rules.js charsheet/traitdesc.js
           # 只有 manifest.js 的版本號變動時不提交
-          if git diff --cached --quiet -- search.json search-index/titles.js 'search-index/content-*.js' charsheet/rules.js; then
+          if git diff --cached --quiet -- search.json search-index/titles.js 'search-index/content-*.js' charsheet/rules.js charsheet/traitdesc.js; then
             echo "索引內容沒有變化，不需提交"
             exit 0
           fi

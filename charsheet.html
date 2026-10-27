@@ -645,7 +645,7 @@ function render() {
 
   <section class="card adv" id="s-enh">
     <h2>強化能力 <small>按「選擇」從網站資源挑選，也可以直接打字</small></h2>
-    <p class="hint">選好資源並填寫等級後，按「帶入特性」會從資源頁抓取 D 級到該等級的特性（前面標註取得等級）。特性欄一行一個，最多 12 行，也可以自己修改。</p>
+    <p class="hint">選好資源並填寫等級後，按「帶入特性」會從資源頁抓取 D 級到該等級的特性（前面標註取得等級）。特性欄一行一個，最多 12 行，也可以自己修改。導出時，網站上找得到效果的特性會自動在格子加上備註，內容是該特性的效果。</p>
     <datalist id="dlLevel">${['D', 'DD', 'C', 'CC', 'B', 'BB', 'A', 'AA', 'S', 'SS'].map(v => `<option value="${v}"></option>`).join('')}</datalist>
     <div class="enh">${ENH.map(e => enhCard(e.c, e.n, e.cat)).join('')}</div>
     <h3>稱號與流派</h3>
@@ -1065,7 +1065,7 @@ function listPick() {
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-clear]');
   if (!b) return;
-  b.dataset.clear.split(',').forEach(k => { delete S['f:' + k]; delete S['url:' + k]; S[k] = ''; });
+  b.dataset.clear.split(',').forEach(k => { delete S['f:' + k]; delete S['url:' + k]; delete S['n:' + k]; S[k] = ''; });
   save(); fill(); show();
 });
 
@@ -1261,6 +1261,7 @@ async function exportXlsx() {
     // 匯入時保留下來、網頁還不能編輯的格子
     for (const key of Object.keys(S)) if (key.startsWith('x:')) specs.set(key.slice(2), S[key]);
     zip.file(path, applyCells(await zip.file(path).async('string'), specs));
+    await writeNotes(zip, path, await exportNotes());
     const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     download(blob, (String(raw('B3')).trim() || '角色卡') + '.xlsx');
     toast('已導出，可用 Google 試算表開啟（檔案 → 匯入）');
@@ -1268,6 +1269,94 @@ async function exportXlsx() {
     console.error(e);
     alert('導出失敗：' + e.message);
   } finally { btn.disabled = false; }
+}
+
+
+/* ----- 備註（試算表的註解） ----- */
+// 工作表的備註檔與顯示框檔（Excel 需要兩個都有）
+async function notesParts(zip, sheet) {
+  const rp = sheet.replace(/([^/]+)$/, '_rels/$1.rels'), f = zip.file(rp);
+  if (!f) return {};
+  const rels = await f.async('string'), base = sheet.replace(/[^/]+$/, '');
+  const find = type => {
+    const m = rels.match(new RegExp(`<Relationship[^>]*Type="[^"]*/${type}"[^>]*Target="([^"]+)"`)) ||
+              rels.match(new RegExp(`<Relationship[^>]*Target="([^"]+)"[^>]*Type="[^"]*/${type}"`));
+    if (!m) return null;
+    const parts = (m[1].startsWith('/') ? m[1].slice(1) : base + m[1]).split('/'), out = [];
+    parts.forEach(x => { if (x === '..') out.pop(); else if (x !== '.') out.push(x); });
+    return out.join('/');
+  };
+  return { comments: find('comments'), vml: find('vmlDrawing') };
+}
+async function readNotes(zip, sheet) {
+  const { comments } = await notesParts(zip, sheet), out = new Map();
+  if (!comments || !zip.file(comments)) return out;
+  const doc = new DOMParser().parseFromString(await zip.file(comments).async('string'), 'application/xml');
+  for (const cm of doc.getElementsByTagNameNS(NS, 'comment')) {
+    const text = [...cm.getElementsByTagNameNS(NS, 't')].map(t => t.textContent).join('');
+    if (text.trim()) out.set(cm.getAttribute('ref'), text);
+  }
+  return out;
+}
+let TPL_NOTES = null;
+async function templateNotes() {
+  if (TPL_NOTES) return TPL_NOTES;
+  const zip = await templateZip();
+  TPL_NOTES = await readNotes(zip, await sheetPath(zip, '空白卡'));
+  return TPL_NOTES;
+}
+// 要寫入的備註：玩家的備註，加上強化能力特性格自動帶入的效果
+async function exportNotes() {
+  const notes = new Map();
+  Object.keys(S).forEach(k => { if (k.startsWith('n:') && String(S[k]).trim()) notes.set(k.slice(2), S[k]); });
+  const cols = [...ENH.map(e => e.c), ...TITLE_COLS].filter(c => S['url:' + c + '80']);
+  if (cols.length) {
+    if (!window.CHARSHEET_TRAITDESC) { try { await loadScript('charsheet/traitdesc.js'); } catch (e) { return notes; } }
+    for (const c of cols) {
+      const url = decodeURIComponent(S['url:' + c + '80']);
+      for (const r of TRAIT_ROWS) {
+        const ref = c + r, text = String(raw(ref)).trim();
+        if (!text || notes.has(ref)) continue;
+        const d = traitDesc(url, text);
+        if (d) notes.set(ref, d);
+      }
+    }
+  }
+  return notes;
+}
+// 「【D】承冠之重（三特性）」→ 找資源頁上 D 級「承冠之重」的效果；沒標等級就找最低等級的
+function traitDesc(url, text) {
+  const all = (window.CHARSHEET_TRAITDESC || {})[url];
+  if (!all) return '';
+  const m = text.match(/^【([A-Z]{1,2})】/), lv = m ? m[1] : '';
+  const base = text.replace(/^【[^】]*】/, '').replace(/\s*[（(][^）)]*[)）]\s*/g, '').trim();
+  if (lv && all[lv + '|' + base]) return all[lv + '|' + base];
+  const keys = Object.keys(all).filter(k => k.split('|')[1] === base);
+  keys.sort((a, b) => LV_ORDER.indexOf(a.split('|')[0]) - LV_ORDER.indexOf(b.split('|')[0]));
+  return keys.length ? all[keys[0]] : '';
+}
+async function writeNotes(zip, sheet, notes) {
+  if (!notes.size) return;
+  const { comments, vml } = await notesParts(zip, sheet);
+  if (!comments || !vml || !zip.file(comments) || !zip.file(vml)) return;   // 樣板一定有，保險起見
+  let cx = await zip.file(comments).async('string'), vx = await zip.file(vml).async('string');
+  let nextId = Math.max(1024, ...[...vx.matchAll(/_x0000_s(\d+)/g)].map(m => +m[1])) + 1;
+  for (const [ref, text] of notes) {
+    // 備註內容：同一格原本的備註換掉
+    cx = cx.replace(new RegExp(`<comment ref="${ref}"[^>]*>[\\s\\S]*?</comment>`), '')
+           .replace(new RegExp(`<comment authorId="\\d+" ref="${ref}"[^>]*>[\\s\\S]*?</comment>`), '');
+    cx = cx.replace('</commentList>', `<comment ref="${ref}" authorId="0"><text><t xml:space="preserve">${xmlEsc(text)}</t></text></comment></commentList>`);
+    // 顯示框：這一格還沒有才新增（位置照 Excel 的預設：格子右邊、往下延伸）
+    const col = colNum(ref) - 1, row = +ref.match(/\d+$/)[0] - 1;
+    if (!new RegExp(`<x:Row>${row}</x:Row>\\s*<x:Column>${col}</x:Column>`).test(vx)) {
+      vx = vx.replace(/<\/xml>\s*$/, `<v:shape id="_x0000_s${nextId++}" style="visibility:hidden" fillcolor="#ffffe1" type="#_x0000_t202">` +
+        `<v:fill angle="0" color2="#ffffe1"/><v:shadow color="black" obscured="t" on="t"/><v:path o:connecttype="none"/><v:textbox/>` +
+        `<x:ClientData ObjectType="Note"><x:MoveWithCells></x:MoveWithCells><x:SizeWithCells></x:SizeWithCells>` +
+        `<x:Anchor>${col + 1}, 15, ${row + 1}, 10, ${col + 5}, 15, ${row + 10}, 4</x:Anchor><x:AutoFill>False</x:AutoFill>` +
+        `<x:Row>${row}</x:Row><x:Column>${col}</x:Column></x:ClientData></v:shape></xml>`);
+    }
+  }
+  zip.file(comments, cx); zip.file(vml, vx);
 }
 
 /* ----- 匯入 Excel ----- */
@@ -1279,15 +1368,17 @@ async function templateCells() {
   return TPL_CELLS;
 }
 const normF = f => String(f || '').replace(/\s+/g, '').replace(/_xlfn\./gi, '').toLowerCase();
-// 舊版空白卡有錯的公式（樣板已修正）：匯入舊角卡時不當成玩家自訂，導出時改用修正後的公式
-const LEGACY_F = {
-  BS2: 'SUM(BS5:BT24)',
-  CO2: '(IF($BS$2<0,$BS$2*(-1),$BS$2)/2)-SUM($CO$5:$CP$12)',
-  BG38: 'iferror(VLOOKUP(AU38,$CZ$155:$DI$186,5,false)+vlookup(AF38,$CZ$155:$DI$186,5,false),"X")',
-};
+// 舊版空白卡（修正公式、繁體化之前）的內容，由 tools/build_charsheet.py 產生在 template.js 裡。
+// 匯入舊角卡時，和舊版內容相同的格子視為沒改過，導出時用新版。
+const tplOld = () => window.CHARSHEET_TEMPLATE_OLD || { cells: {}, notes: {}, conv: {} };
 function sameCell(a, b, ref) {
   if (a.shared) return true;                         // Excel 共用公式：視為沒改
-  if (a.f != null && LEGACY_F[ref] && normF(a.f) === normF(LEGACY_F[ref])) return true;
+  const old = tplOld().cells[ref];
+  if (old != null) {
+    const o = String(old);
+    if (a.f != null && o.startsWith('=') && normF(a.f) === normF(o.slice(1))) return true;
+    if (a.f == null && !o.startsWith('=') && String(a.v) === o) return true;
+  }
   if (a.f != null || b.f != null) return normF(a.f == null ? a.f : modernize(a.f)) === normF(b.f);
   if (isNum(a.v) && isNum(b.v)) return +a.v === +b.v;
   return String(a.v) === String(b.v);
@@ -1344,20 +1435,29 @@ async function importXlsx(file) {
     if (ref in FIELDS) continue;
     const c = cells.get(ref) || { v: '' }, tc = tpl.get(ref) || { v: '' };
     if (sameCell(c, tc, ref)) continue;
-    const keep = { v: c.v };
+    const conv = tplOld().conv;
+    const keep = { v: typeof c.v === 'string' && conv[c.v] ? conv[c.v] : c.v };
     if (c.f != null && !c.shared) { keep.f = c.f; if (c.fa) keep.fa = c.fa; }
     else if (c.t === 'n' && isNum(c.v)) keep.t = 'n';
     N['x:' + ref] = keep; kept.push(ref);
     if (computed.has(ref)) overridden.push(ref);
   }
-  // 3. 強化能力：配對網站資源，找不到的就是原創
+  // 3. 備註：和空白卡（新版或舊版）不同的就是玩家自己寫的，保留下來
+  const notes = await readNotes(zip, pickSheet.path), tplNotes = await templateNotes(), oldNotes = tplOld().notes;
+  let noteCount = 0;
+  for (const [ref, text] of notes) {
+    const t = text.trim();
+    if (t === (tplNotes.get(ref) || '').trim() || t === String(oldNotes[ref] || '').trim()) continue;
+    N['n:' + ref] = text; noteCount++;
+  }
+  // 4. 強化能力：配對網站資源，找不到的就是原創
   const original = [];
   for (const k of Object.keys(ENH_CATS)) {
     if (!String(raw(k)).trim()) continue;
     autoLink(k, true);
     if (!S['url:' + k]) original.push(raw(k));
   }
-  S['meta:import'] = JSON.stringify({ file: file.name, sheet: pickSheet.name, kept: kept.length, overridden, formulaFields, original });
+  S['meta:import'] = JSON.stringify({ file: file.name, sheet: pickSheet.name, kept: kept.length, notes: noteCount, overridden, formulaFields, original });
   save(); fill(); show();
   showImportReport();
 }
@@ -1369,6 +1469,7 @@ function showImportReport() {
   if (info.formulaFields.length) lines.push(`\n● ${info.formulaFields.length} 個欄位原本寫的是公式（以紫色標示，滑鼠移上去可看公式）。網頁顯示匯入時的結果，導出時保留公式：${info.formulaFields.join('、')}`);
   if (info.overridden.length) lines.push(`\n● 有 ${info.overridden.length} 個計算格被原角卡改過公式，網頁顯示的是標準算法，導出時會保留原角卡的公式：${info.overridden.join('、')}`);
   if (info.kept) lines.push(`\n● 另外保留了 ${info.kept} 格網頁還不能編輯的內容（能量池、攻擊、裝備、收支紀錄等），導出時原樣寫回。`);
+  if (info.notes) lines.push(`\n● 保留了 ${info.notes} 則你在角卡上寫的備註，導出時原樣寫回。`);
   alert(lines.join('\n'));
 }
 function chooseSheet(cands) {
@@ -1387,11 +1488,13 @@ function refreshKept() {
   const box = document.getElementById('keptInfo');
   if (!box) return;
   const kept = Object.keys(S).filter(k => k.startsWith('x:')).length;
+  const notes = Object.keys(S).filter(k => k.startsWith('n:')).length;
   const info = S['meta:import'] ? JSON.parse(S['meta:import']) : null;
-  box.hidden = !info && !kept;
+  box.hidden = !info && !kept && !notes;
   if (box.hidden) return;
   box.querySelector('.txt').textContent = (info ? `匯入自「${info.sheet}」。` : '') +
-    (kept ? `保留了 ${kept} 格網頁還不能編輯的原角卡內容，導出時會原樣寫回。` : '');
+    (kept ? `保留了 ${kept} 格網頁還不能編輯的原角卡內容` : '') + (kept && notes ? '、' : '') +
+    (notes ? `${kept ? '' : '保留了 '}${notes} 則備註` : '') + (kept || notes ? '，導出時會原樣寫回。' : '');
 }
 function download(blob, name) {
   const a = document.createElement('a');
@@ -1434,8 +1537,8 @@ document.getElementById('fileImport').onchange = async e => {
 document.addEventListener('click', e => {
   if (e.target.closest('#keptReport')) showImportReport();
   if (e.target.closest('#keptClear')) {
-    if (!confirm('清除後，導出時不會再寫回原角卡的能量池、攻擊、裝備、收支紀錄等內容，也不會保留欄位裡的公式。確定嗎？')) return;
-    Object.keys(S).forEach(k => { if (k.startsWith('x:') || k.startsWith('f:') || k === 'meta:import') delete S[k]; });
+    if (!confirm('清除後，導出時不會再寫回原角卡的能量池、攻擊、裝備、收支紀錄等內容，也不會保留欄位裡的公式和你寫的備註。確定嗎？')) return;
+    Object.keys(S).forEach(k => { if (k.startsWith('x:') || k.startsWith('f:') || k.startsWith('n:') || k === 'meta:import') delete S[k]; });
     save(); fill(); show();
   }
 });

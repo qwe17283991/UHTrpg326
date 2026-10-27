@@ -193,6 +193,32 @@ def build_template(src):
     ct = re.sub(r'<Override PartName="__DROP__"[^>]*/>', '', ct)
 
     blank = 'xl/' + rid_target[next(rid for name, rid in sheets if name == '空白卡')]
+    kept_sheets = {'xl/' + rid_target[r] for r in keep_rids}
+
+    # 簡體 → 繁體（工作表文字、公式裡的字串、下拉選單、備註）
+    try:
+        from opencc import OpenCC
+        s2t = OpenCC('s2tw').convert
+    except ImportError:
+        s2t = None
+        print('  ！沒有安裝 opencc（pip install opencc-python-reimplemented），略過繁體轉換')
+    def to_trad(xml):
+        # 只轉標籤外的文字與屬性值；標籤、屬性名稱都是英文，不受影響
+        return s2t(xml) if s2t else xml
+
+    # 開鎖旁的 BP54：新增一個水平＋垂直置中的樣式給它（不動原樣式，免得影響其他格子）
+    styles = z.read('xl/styles.xml').decode('utf-8')
+    xfs = re.search(r'(<cellXfs count=")(\d+)(">)(.*?)(</cellXfs>)', styles, re.S)
+    xf_list = re.findall(r'<xf [^>]*?(?:/>|>.*?</xf>)', xfs.group(4), re.S)
+    blank_xml = z.read(blank).decode('utf-8')
+    bp54 = int(re.search(r'<c r="BP54" s="(\d+)"', blank_xml).group(1))
+    xf = xf_list[bp54]
+    xf = xf[:-2] + '>' if xf.endswith('/>') else re.sub(r'<alignment[^>]*/>|</xf>$', '', xf)
+    xf += '<alignment horizontal="center" vertical="center"/></xf>'
+    if 'applyAlignment' not in xf:
+        xf = xf.replace('<xf ', '<xf applyAlignment="1" ', 1)
+    centered = len(xf_list)
+    styles = styles[:xfs.start()] + xfs.group(1) + str(centered + 1) + xfs.group(3) + xfs.group(4) + xf + xfs.group(5) + styles[xfs.end():]
 
     os.makedirs(OUT_DIR, exist_ok=True)
     out = os.path.join(OUT_DIR, 'template.xlsx')
@@ -203,7 +229,13 @@ def build_template(src):
                 continue
             data = z.read(n)
             if n == blank:
-                data = fix_formulas(data.decode('utf-8')).encode('utf-8')
+                xml = to_trad(fix_formulas(data.decode('utf-8')))
+                xml = re.sub(r'<c r="BP54" s="\d+"', f'<c r="BP54" s="{centered}"', xml)
+                data = xml.encode('utf-8')
+            elif n == 'xl/styles.xml':
+                data = styles.encode('utf-8')
+            elif n in kept_sheets or n == 'xl/sharedStrings.xml' or re.match(r'xl/comments\d*\.xml$', n):
+                data = to_trad(data.decode('utf-8')).encode('utf-8')
             elif n == 'xl/workbook.xml':
                 data = wb_xml.encode('utf-8')
             elif n == 'xl/_rels/workbook.xml.rels':
@@ -213,12 +245,47 @@ def build_template(src):
             o.writestr(info, data)
     print(f'  樣板：{out}（{os.path.getsize(out) // 1024} KB，保留 {", ".join(kept_order)}）')
 
+    old = template_changes(src, out, s2t)
+
     # 同一份樣板包成 .js，讓網頁直接用 <script> 載入（雙擊開啟 file:// 時也能用）
     js = os.path.join(OUT_DIR, 'template.js')
     with open(out, 'rb') as f, open(js, 'w', encoding='utf-8', newline='\n') as o:
         o.write('// 由 tools/build_charsheet.py 產生：charsheet/template.xlsx 的 base64\n')
         o.write('window.CHARSHEET_TEMPLATE = "' + base64.b64encode(f.read()).decode('ascii') + '";\n')
-    print(f'  樣板（網頁用）：{js}')
+        o.write('// 舊版空白卡（修正、繁體化之前）的內容：匯入舊角卡時，和這些相同的格子視為沒改過\n')
+        o.write('window.CHARSHEET_TEMPLATE_OLD = ' + json.dumps(old, ensure_ascii=False, separators=(',', ':')) + ';\n')
+    print(f'  樣板（網頁用）：{js}（舊版內容對照 {len(old["cells"])} 格、備註 {len(old["notes"])} 則）')
+
+
+def template_changes(src, out, s2t):
+    """比對原始空白卡與新樣板，記下被修正或繁體化的格子、備註，以及下拉選單選項的對照"""
+    import openpyxl
+    a = openpyxl.load_workbook(src)['空白卡']
+    b = openpyxl.load_workbook(out)['空白卡']
+    def val(c):
+        v = c.value
+        if type(v).__name__ == 'ArrayFormula':
+            v = v.text
+        return '' if v is None else str(v)
+    cells, notes = {}, {}
+    for row in a.iter_rows():
+        for c in row:
+            va, vb = val(c), val(b[c.coordinate])
+            if va != vb and va:
+                cells[c.coordinate] = va
+            ca, cb = c.comment, b[c.coordinate].comment
+            if ca and cb and ca.text != cb.text:
+                notes[c.coordinate] = ca.text
+    # 下拉選單選項：例如本能覺醒層級「二阶」→「二階」
+    conv = {}
+    if s2t:
+        for dv in a.data_validations.dataValidation:
+            f = dv.formula1 or ''
+            if f.startswith('"'):
+                for item in f.strip('"').split(','):
+                    if s2t(item) != item:
+                        conv[item] = s2t(item)
+    return {'cells': cells, 'notes': notes, 'conv': conv}
 
 
 def build_data(src):
@@ -337,9 +404,55 @@ def parse_traits(lines):
     return levels
 
 
+def trait_base(name):
+    """「承冠之重（三特性）」→「承冠之重」"""
+    return re.sub(r'\s*[（(][^）)]*[)）]\s*', '', name).strip()
+
+
+def parse_trait_desc(lines):
+    """特性效果：「特性：A、B」之後，以「A：」開頭的那段（含接續的行），直到下一個特性、分隔線或下一個等級。
+    回傳 {"D|承冠之重": "效果文字"}"""
+    out, cur, i = {}, None, 0
+    while i < len(lines):
+        l = lines[i]
+        m = PRICE.match(l)
+        if m:
+            cur = m.group(1)
+        elif len(l) <= 20 and LEVEL_HEAD.match(l) and (LEVEL_HEAD.match(l).group(1) or LEVEL_HEAD.match(l).group(2)):
+            cur = LEVEL_HEAD.match(l).group(1) or LEVEL_HEAD.match(l).group(2)
+        if re.match(r'^特性\s*[:：]', l):
+            body = re.split(r'[:：]', l, maxsplit=1)[1].strip()
+            bases = [trait_base(x) for x in re.split(r'[、，,；;]', body) if trait_base(x)]
+            starts = re.compile(r'^(%s)\s*[（(][^）)]*[)）]?\s*[:：]|^(%s)\s*[:：]' % ('|'.join(map(re.escape, bases)), '|'.join(map(re.escape, bases)))) if bases else None
+            j = i + 1
+            while starts and j < len(lines):
+                x = lines[j]
+                if SEP.match(x) or PRICE.match(x) or re.match(r'^特性\s*[:：]', x):
+                    break
+                m2 = starts.match(x)
+                if m2:
+                    base = m2.group(1) or m2.group(2)
+                    text = [re.split(r'[:：]', x, maxsplit=1)[1].strip()]
+                    k = j + 1
+                    while k < len(lines) and not (SEP.match(lines[k]) or PRICE.match(lines[k]) or starts.match(lines[k])
+                                                  or re.match(r'^(特性|技能樹|價格)\s*[:：]', lines[k])):
+                        text.append(lines[k])
+                        k += 1
+                    key = f'{cur or ""}|{base}'
+                    if key not in out:
+                        out[key] = '\n'.join(t for t in text if t)[:1500]
+                    j = k
+                    continue
+                j += 1
+            i = j
+            continue
+        i += 1
+    return out
+
+
 def build_rules():
     node, kids = load_tree()
-    feats, quirks, traits = [], [], {}
+    feats, quirks, traits, descs = [], [], {}, {}
 
     # 一般專長：規則部分 → 專長概述 底下的各專長頁
     ov = find(node, '專長概述', find(node, '建立人物卡來參與遊戲'))
@@ -381,6 +494,9 @@ def build_rules():
         t = parse_traits(lines)
         if t:
             traits[u] = t
+            dsc = parse_trait_desc(lines)
+            if dsc:
+                descs[u] = dsc
         for i, l in enumerate(lines):
             if len(l) <= 40 and re.search(r'專屬.{0,12}專長\s*[:：]?$', l):
                 block = []
@@ -400,6 +516,14 @@ def build_rules():
         f.write('window.CHARSHEET_RULES = ')
         json.dump(data, f, ensure_ascii=False, separators=(',', ':'))
         f.write(';\n')
+    # 特性效果文字量大，另存一個檔案，網頁導出時才載入（寫成格子的備註）
+    out2 = os.path.join(OUT_DIR, 'traitdesc.js')
+    with open(out2, 'w', encoding='utf-8', newline='\n') as f:
+        f.write('// 由 tools/build_charsheet.py --rules 從網站頁面產生：各資源特性的效果文字（導出時寫成備註），請勿手動編輯\n')
+        f.write('window.CHARSHEET_TRAITDESC = ')
+        json.dump(descs, f, ensure_ascii=False, separators=(',', ':'))
+        f.write(';\n')
+    print(f'  特性效果：{out2}（{sum(len(v) for v in descs.values())} 個特性，{os.path.getsize(out2) // 1024} KB）')
     spec = sum(1 for x in feats if x['cat'] == '資源專屬')
     print(f'  規則：{out}（專長 {len(feats) - spec} 項＋資源專屬專長 {spec} 項、怪癖 {len(quirks)} 項、'
           f'{len(traits)} 個資源頁有特性，{os.path.getsize(out) // 1024} KB）')
@@ -411,6 +535,6 @@ if __name__ == '__main__':
     print('建置角卡工具資料…')
     if sys.argv[1] != '--rules':
         build_template(sys.argv[1])
-        build_data(sys.argv[1])
+        build_data(os.path.join(OUT_DIR, 'template.xlsx'))   # 讀繁體化後的樣板，名稱才會和試算表一致
     build_rules()
     print('完成！')
